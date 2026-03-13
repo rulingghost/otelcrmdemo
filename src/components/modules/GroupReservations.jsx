@@ -1,184 +1,154 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, Search, Plus, 
-  MapPin, Clock, CheckCircle,
-  Hash, DollarSign, Calendar,
-  MoreVertical, ChevronRight, FileText,
-  Briefcase, Globe, Star
+  Users, Plus, Search, Calendar, 
+  Bed, FileText, ChevronRight, 
+  MoreHorizontal, Download, UserPlus,
+  ArrowRight, ShieldCheck, Tag
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const groups = [
-  { id: 'GRP-702', name: 'Almanya Teknik Heyeti', leader: 'Hans Gruber', rooms: 15, adults: 30, status: 'confirmed', arrival: '18.03.2024', total: '₺ 280,450' },
-  { id: 'GRP-705', name: 'Yılmaz Düğün Kafilesi', leader: 'Mehmet Yılmaz', rooms: 45, adults: 90, status: 'pending', arrival: '22.03.2024', total: '₺ 1,120,500' },
-  { id: 'GRP-708', name: 'Teknoloji Zirvesi Konuşmacıları', leader: 'Caner Ak', rooms: 8, adults: 8, status: 'in-house', arrival: '12.03.2024', total: '₺ 92,100' },
-];
 
 const GroupReservations = () => {
+  const [filter, setFilter] = useState('tümü');
+
+  const groups = [
+    { id: 'GRP-001', name: 'Almanya Tur Grubu', leader: 'Hans Müller', pax: 45, rooms: 22, date: '15-22 Mart 2026', status: 'aktif', price: '₺145,000' },
+    { id: 'GRP-002', name: 'Düğün: Yılmaz & Demir', leader: 'Mehmet Yılmaz', pax: 80, rooms: 40, date: '20-22 Mart 2026', status: 'beklemede', price: '₺320,000' },
+    { id: 'GRP-003', name: 'Ziraat Bankası Toplantı', leader: 'Deniz Gök', pax: 15, rooms: 15, date: '25-27 Mart 2026', status: 'konfirm', price: '₺62,500' },
+  ];
+
   return (
-    <div className="group-container">
-      <header className="header">
-         <div className="title-section">
-            <Users size={32} className="icon-blue"/>
-            <div>
-               <h2>Grup Rezervasyonları & Operasyon</h2>
-               <span>Düğün, kongre ve kafile gibi toplu girişlerin merkezi yönetimi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline"><FileText size={18}/> TOPLU ROOMING LİSTESİ</button>
-            <button className="btn primary"><Plus size={18}/> YENİ GRUP OLUŞTUR</button>
-         </div>
-      </header>
+    <div className="grp-page">
+      <div className="grp-head">
+        <div>
+          <h2><Users size={20}/> Grup Rezervasyon & Blokaj Yönetimi</h2>
+          <span>Grup bazlı konaklama, toplu oda atama ve grup foliosu takibi</span>
+        </div>
+        <button className="btn-primary"><Plus size={15}/> Yeni Grup Rezervasyonu</button>
+      </div>
 
-      <div className="group-grid">
-         {/* Group KPIs */}
-         <div className="stats-row">
-            <div className="card stat-card">
-               <span className="label">Aktif Gruplar</span>
-               <strong>12</strong>
+      <div className="grp-stats">
+        {[
+          { label: 'Aktif Gruplar', val: '8', icon: <Users size={18}/> },
+          { label: 'Bloke Odalar', val: '142', icon: <Bed size={18}/> },
+          { label: 'Toplam Hacim', val: '₺840K', icon: <Tag size={18}/> },
+        ].map(s => (
+          <div key={s.label} className="s-card">
+            <div className="sc-icon">{s.icon}</div>
+            <div className="sc-info">
+              <span>{s.label}</span>
+              <strong>{s.val}</strong>
             </div>
-            <div className="card stat-card">
-               <span className="label">Toplam Grup Oda Geceleme</span>
-               <strong>845</strong>
-            </div>
-            <div className="card stat-card">
-               <span className="label">Grup Gelir Payı</span>
-               <strong className="blue">24%</strong>
-            </div>
-         </div>
+          </div>
+        ))}
+      </div>
 
-         {/* Main Group Table */}
-         <section className="card list-section">
-            <div className="section-header">
-               <h3>GRUP LİSTESİ</h3>
-               <div className="search-box">
-                  <Search size={16} />
-                  <input type="text" placeholder="Grup Adı veya Lider Ara..." />
-               </div>
-            </div>
-            <table className="group-table">
-               <thead>
-                  <tr>
-                     <th>Grup ID</th>
-                     <th>Grup Adı</th>
-                     <th>Grup Lideri</th>
-                     <th>Oda / Pax</th>
-                     <th>Geliş Tarihi</th>
-                     <th>Toplam Sipariş</th>
-                     <th>Durum</th>
-                     <th></th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {groups.map((g, idx) => (
-                    <tr key={idx}>
-                       <td className="id"><strong>{g.id}</strong></td>
-                       <td><strong>{g.name}</strong></td>
-                       <td><div className="user-info"><UserIcon size={12}/> {g.leader}</div></td>
-                       <td>{g.rooms} Oda / {g.adults} Pax</td>
-                       <td>{g.arrival}</td>
-                       <td className="total">{g.total}</td>
-                       <td>
-                          <span className={`status-pill ${g.status}`}>
-                             {g.status === 'confirmed' ? 'Onaylandı' : g.status === 'pending' ? 'Beklemede' : 'İçeride'}
-                          </span>
-                       </td>
-                       <td><button className="icon-btn"><MoreVertical size={14}/></button></td>
-                    </tr>
-                  ))}
-               </tbody>
-            </table>
-         </section>
+      <div className="grp-main">
+        <div className="filters-bar">
+          <div className="search-wrap">
+            <Search size={16} color="#94a3b8"/>
+            <input placeholder="Grup adı veya kod ara..." />
+          </div>
+          <div className="tabs">
+            {['tümü', 'aktif', 'beklemede', 'konfirm'].map(t => (
+              <button key={t} className={`t-btn ${filter === t ? 'active' : ''}`} onClick={() => setFilter(t)}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-         {/* Right Sidebar: Mass Actions */}
-         <aside className="group-sidebar">
-            <div className="card action-card">
-               <h3>TOPLU İŞLEMLER</h3>
-               <button className="btn-full outline mt-15"><CheckCircle size={16}/> Toplu Check-in</button>
-               <button className="btn-full outline mt-10"><DollarSign size={16}/> Tekil Folio Kapatma</button>
-               <button className="btn-full outline mt-10"><Calendar size={16}/> Tarih Güncelle</button>
-            </div>
-
-            <div className="card mt-20 warning-card">
-               <Briefcase size={24} className="orange"/>
-               <p><strong>Yılmaz Düğün</strong> kafilesi için 12 adet ikiz yataklı oda talebi mevcut. Oda planını kontrol edin.</p>
-               <button className="btn-full primary mt-10">ODALARI ATA</button>
-            </div>
-         </aside>
+        <div className="group-list">
+          {groups.map((g, i) => (
+            <motion.div 
+              key={g.id} 
+              className="group-card"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <div className="gc-main">
+                <div className="gc-info">
+                  <div className="gc-id">#{g.id}</div>
+                  <strong>{g.name}</strong>
+                  <span><Calendar size={11}/> {g.date}</span>
+                </div>
+                <div className="gc-stats-row">
+                  <div className="gcs">
+                    <span>Oda/Pax</span>
+                    <strong>{g.rooms} R / {g.pax} P</strong>
+                  </div>
+                  <div className="gcs">
+                    <span>Lider</span>
+                    <strong>{g.leader}</strong>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="gc-foot">
+                <div className={`status-tag ${g.status}`}>
+                  {g.status === 'aktif' ? 'Check-in Yapıldı' : g.status === 'beklemede' ? 'Teklif' : 'Onaylandı'}
+                </div>
+                <div className="gc-price">{g.price}</div>
+                <div className="gc-actions">
+                  <button className="a-btn"><UserPlus size={16}/></button>
+                  <button className="a-btn primary">Grup Folio <ArrowRight size={14}/></button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       <style>{`
-        .group-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; border: none; font-size: 13px; }
-        .btn.primary { background: #3b82f6; color: white; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .group-grid { display: grid; grid-template-columns: 1fr 300px; gap: 30px; }
+        .grp-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .grp-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .grp-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .grp-head span { font-size: 13px; color: #94a3b8; }
         
-        .stats-row { grid-column: 1 / 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .stat-card { text-align: center; padding: 20px; }
-        .stat-card .label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 5px; font-weight: 700; }
-        .stat-card strong { font-size: 24px; font-weight: 800; color: #1e293b; }
+        .btn-primary { padding: 12px 20px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
-        .card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .grp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .s-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 20px; display: flex; align-items: center; gap: 16px; }
+        .sc-icon { width: 44px; height: 44px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #3b82f6; }
+        .sc-info span { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .sc-info strong { display: block; font-size: 20px; font-weight: 900; color: #1e293b; }
 
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .section-header h3 { font-size: 14px; font-weight: 900; color: #1e293b; }
+        .grp-main { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+        .filters-bar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .search-wrap { flex: 1; display: flex; align-items: center; gap: 12px; background: #f8fafc; border: 1.5px solid #f1f5f9; border-radius: 12px; padding: 10px 16px; }
+        .search-wrap input { border: none; background: transparent; outline: none; font-size: 13px; color: #475569; width: 100%; }
+        
+        .tabs { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px; }
+        .t-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; }
+        .t-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .search-box { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px; }
-        .search-box input { background: transparent; border: none; outline: none; font-size: 13px; width: 180px; }
+        .group-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+        .group-card { background: white; border: 1.5px solid #f1f5f9; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px; transition: 0.2s; }
+        .group-card:hover { border-color: #3b82f6; background: #f8fafc; transform: translateY(-3px); }
+        
+        .gc-main { display: flex; justify-content: space-between; align-items: flex-start; }
+        .gc-info .gc-id { font-size: 10px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 6px; width: fit-content; margin-bottom: 6px; }
+        .gc-info strong { display: block; font-size: 16px; color: #1e293b; }
+        .gc-info span { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+        
+        .gc-stats-row { text-align: right; display: flex; flex-direction: column; gap: 8px; }
+        .gcs span { display: block; font-size: 10px; color: #94a3b8; }
+        .gcs strong { font-size: 13px; color: #475569; }
 
-        .group-table { width: 100%; border-collapse: collapse; }
-        .group-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
-        .group-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid #f8fafc; color: #475569; }
-
-        .id strong { font-family: monospace; color: #1e293b; }
-        .user-info { display: flex; align-items: center; gap: 8px; color: #64748b; }
-
-        .total { font-weight: 800; color: #1e293b; }
-
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-        .status-pill.confirmed { background: #ecfdf5; color: #10b981; }
-        .status-pill.pending { background: #fffcf0; color: #f59e0b; }
-        .status-pill.in-house { background: #eff6ff; color: #3b82f6; }
-
-        .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #f1f5f9; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; }
-
-        .action-card h3 { font-size: 13px; font-weight: 900; margin-bottom: 20px; color: #1e293b; }
-        .btn-full { width: 100%; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; gap: 10px; }
-        .btn-full.primary { background: #3b82f6; color: white; }
-        .btn-full.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .warning-card { background: #fffbeb; border-color: #fef3c7; }
-        .warning-card p { font-size: 12px; color: #92400e; line-height: 1.5; margin: 15px 0; }
-
-        .blue { color: #3b82f6; }
-        .orange { color: #f59e0b; }
+        .gc-foot { border-top: 1px solid #f1f5f9; padding-top: 16px; display: flex; align-items: center; gap: 12px; }
+        .status-tag { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
+        .status-tag.aktif { background: #f0fdf4; color: #10b981; }
+        .status-tag.beklemede { background: #fffbeb; color: #f59e0b; }
+        .status-tag.konfirm { background: #eff6ff; color: #3b82f6; }
+        
+        .gc-price { flex: 1; font-size: 16px; font-weight: 900; color: #1e293b; text-align: right; margin-right: 8px; }
+        .gc-actions { display: flex; gap: 8px; }
+        .a-btn { padding: 8px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .a-btn.primary { background: #1e293b; color: white; border: none; padding: 8px 14px; font-size: 11px; font-weight: 700; gap: 6px; }
+        .a-btn:hover { border-color: #3b82f6; color: #3b82f6; }
       `}</style>
     </div>
   );
 };
-
-const UserIcon = ({ size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>
-);
 
 export default GroupReservations;

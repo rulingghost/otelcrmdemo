@@ -1,245 +1,199 @@
 import React, { useState } from 'react';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Bot, Zap, TrendingUp, 
-  Search, Settings, Bell, 
-  ChevronRight, MoreVertical, LayoutGrid,
-  ShieldCheck, RefreshCw, Activity,
-  AlertCircle, CheckCircle, BarChart3,
-  Clock, ArrowUpRight, ArrowDownRight,
-  Database, User
+  BrainCircuit, Sparkles, TrendingUp, AlertCircle, 
+  Lightbulb, Target, ArrowRight, RefreshCcw, PieChart,
+  Zap
 } from 'lucide-react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, LineChart, Line
-} from 'recharts';
-import { motion } from 'framer-motion';
-
-const heatmapData = Array.from({ length: 31 }, (_, i) => ({
-  day: i + 1,
-  occ: Math.floor(Math.random() * 40) + 60,
-  demand: Math.floor(Math.random() * 100),
-}));
-
-const aiLogs = [
-  { action: 'Lowered prices for 10 rooms', reason: 'Due to local event cancellation', time: '5 hu ago' },
-  { action: 'Ordered 50 extra towels', reason: 'Due high VIP arrival prediction', time: '7 h ago' },
-  { action: 'Increased suite pricing by 18%', reason: 'For high demand weekend', time: '1 day ago' },
-  { action: 'Activated channel price sync', reason: 'Automated strategy alignment', time: '2 day ago' },
-];
-
-const insights = [
-  { text: 'Ai adjusted rates for August', type: 'info' },
-  { text: 'Occupancy boost detected', type: 'success' },
-  { text: 'Conference demand spike predicted for next Friday', type: 'warning' },
-  { text: 'Low demand detected for early October', type: 'alert' },
-];
 
 const AIStrategy = () => {
-  const [strategyOn, setStrategyOn] = useState(true);
+  const { addNotification } = useHotel();
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const insights = [
+    { 
+      id: 1, 
+      type: 'price', 
+      priority: 'high', 
+      title: 'Dinamik Fiyatlandırma Önerisi', 
+      desc: 'Önümüzdeki hafta sonu bölgedeki etkinlikler nedeniyle talep artışı bekleniyor. Fiyatların %15 artırılması önerilir.', 
+      impact: '+₺45,000 Gelir'
+    },
+    { 
+      id: 2, 
+      type: 'ops', 
+      priority: 'medium', 
+      title: 'Personel Optimizasyonu', 
+      desc: 'Salı günü beklenen check-out yoğunluğu nedeniyle Kat Hizmetleri ekibine 2 ekstra personel takviyesi önerilir.', 
+      impact: '%20 Hız Artışı'
+    },
+    { 
+      id: 3, 
+      type: 'mkt', 
+      priority: 'low', 
+      title: 'Sadakat Programı Teklifi', 
+      desc: 'Son 2 aydır konaklamayan "Gold" üyeler için özel bir "Özledik" mail kampanyası başlatılabilir.', 
+      impact: '15+ Rezervasyon'
+    }
+  ];
+
+  const handleAnalyze = () => {
+    setAnalyzing(true);
+    setTimeout(() => {
+      setAnalyzing(false);
+      addNotification({ type: 'success', msg: 'Veriler güncel tahminleme modelleri ile yeniden analiz edildi.' });
+    }, 3000);
+  };
 
   return (
-    <div className="ai-container">
-      <header className="header">
-         <div className="title-section">
-            <Bot size={32} className={strategyOn ? 'icon-blue' : 'icon-gray'}/>
-            <div>
-               <h2>Ai Autonomous Strategy Center</h2>
-               <span>Otonom fiyatlandırma, talep tahmini ve operasyonel optimizasyon</span>
-            </div>
-         </div>
-         <div className="actions">
-            <div className={`switch-box ${strategyOn ? 'on' : 'off'}`}>
-               <span>AI STRATEGY {strategyOn ? 'ON' : 'OFF'}</span>
-               <button onClick={() => setStrategyOn(!strategyOn)} className="switch">
-                  <div className="s-dot"></div>
-               </button>
-            </div>
-            <button className="icon-btn"><Settings size={18}/></button>
-         </div>
-      </header>
+    <div className="ai-page">
+      <div className="ai-head">
+        <div>
+          <h2><BrainCircuit size={20}/> AI Strategy & Insights</h2>
+          <span>Makine öğrenmesi tabanlı operasyonel ve finansal stratejiler</span>
+        </div>
+        <button 
+          className={`btn-ai ${analyzing ? 'loading' : ''}`}
+          onClick={handleAnalyze}
+          disabled={analyzing}
+        >
+          {analyzing ? <RefreshCcw size={15} className="spin"/> : <Sparkles size={15}/>}
+          {analyzing ? 'Analiz Ediliyor...' : 'Yeniden Analiz Et'}
+        </button>
+      </div>
 
       <div className="ai-grid">
-         {/* Center Top: Heatmap & Forecast */}
-         <section className="main-content">
-            <div className="card heatmap-card">
-               <div className="c-head">
-                  <h3>365-DEMAND HEATMAP</h3>
-                  <div className="h-meta">
-                     <span className="low">Low Demand</span>
-                     <div className="gradient-bar"></div>
-                     <span className="high">High Demand</span>
-                  </div>
-               </div>
-               <div className="heatmap-grid">
-                  {heatmapData.map((d, i) => (
-                    <div 
-                      key={i} 
-                      className="heat-cell" 
-                      style={{ 
-                         background: `rgba(59, 130, 246, ${d.demand / 100})`,
-                         opacity: d.demand < 20 ? 0.3 : 1
-                      }}
-                      title={`Day ${d.day}: ${d.demand}% Demand`}
-                    ></div>
-                  ))}
-               </div>
+        {/* Sol: Insights */}
+        <div className="insight-list">
+          <div className="il-head">
+            <h3>Yapay Zeka Önerileri</h3>
+            <div className="ai-badge">Canlı Analiz Aktif</div>
+          </div>
+          
+          <div className="cards">
+            {insights.map((ins, i) => (
+              <motion.div 
+                key={ins.id} 
+                className={`ins-card ${ins.priority}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <div className="ins-top">
+                  <div className={`prio-dot ${ins.priority}`} />
+                  <strong>{ins.title}</strong>
+                  <span className="impact-tag">{ins.impact}</span>
+                </div>
+                <p>{ins.desc}</p>
+                <div className="ins-actions">
+                  <button className="apply-btn">Stratejiyi Uygula <ArrowRight size={14}/></button>
+                  <button className="ignore-btn">Yoksay</button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sağ: Veri Özetleri */}
+        <div className="ai-stats">
+          <div className="ai-stat-card primary">
+            <Zap size={24} color="#f59e0b" fill="#f59e0b"/>
+            <div className="asc-info">
+              <span className="asc-label">Tahmini Ay Sonu Geliri</span>
+              <div className="asc-val">₺1,450,000</div>
+              <div className="asc-trend up">+%18 Hedef Üstü</div>
             </div>
+          </div>
 
-            <div className="forecast-row mt-20">
-               <div className="card forecast-card">
-                  <div className="c-head">
-                     <h3>AI FORECAST</h3>
-                     <div className="legend">
-                        <div className="l-item"><div className="dot blue"></div> Predicted Revenue</div>
-                        <div className="l-item"><div className="dot green"></div> Actual Revenue</div>
-                     </div>
-                  </div>
-                  <div style={{ height: 250 }}>
-                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={heatmapData}>
-                           <defs>
-                              <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                              </linearGradient>
-                           </defs>
-                           <Area type="monotone" dataKey="occ" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPred)" />
-                           <Line type="monotone" dataKey="day" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                        </AreaChart>
-                     </ResponsiveContainer>
-                  </div>
-               </div>
+          <div className="stats-box">
+            <h3>Talep Projeksiyonu (14 Gün)</h3>
+            <div className="progress-list">
+              {[
+                { label: 'Standart Oda', val: 92, color: '#3b82f6' },
+                { label: 'Deluxe Oda', val: 75, color: '#10b981' },
+                { label: 'Suite', val: 45, color: '#8b5cf6' },
+                { label: 'Aile Odası', val: 88, color: '#f59e0b' },
+              ].map(p => (
+                <div key={p.label} className="prog-row">
+                  <div className="prog-info"><span>{p.label}</span><strong>%{p.val}</strong></div>
+                  <div className="prog-bg"><motion.div 
+                    className="prog-bar" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${p.val}%` }}
+                    style={{ background: p.color }}
+                  /></div>
+                </div>
+              ))}
             </div>
-         </section>
+          </div>
 
-         {/* Side Columns */}
-         <aside className="left-panel">
-            <section className="card insights-card">
-               <h3>STRATEGIC INSIGHTS</h3>
-               <div className="ins-list">
-                  {insights.map((ins, i) => (
-                    <div key={i} className={`ins-item ${ins.type}`}>
-                       <ShieldCheck size={16}/>
-                       <span>{ins.text}</span>
-                    </div>
-                  ))}
-               </div>
-            </section>
-
-            <section className="card control-card mt-20">
-               <div className="c-head">
-                  <h3>PMS TAPE CHART (AI VIEW)</h3>
-                  <button className="mini-btn"><LayoutGrid size={12}/> View</button>
-               </div>
-               <div className="mini-chart-mockup">
-                  {/* Visual mockup of a tape chart */}
-                  <div className="mock-row"></div>
-                  <div className="mock-row active"></div>
-                  <div className="mock-row"></div>
-               </div>
-            </section>
-         </aside>
-
-         <aside className="right-panel">
-            <section className="card action-log-card">
-               <h3>AUTONOMOUS ACTIONS LOG</h3>
-               <div className="act-list">
-                  {aiLogs.map((log, i) => (
-                    <div key={i} className="act-item">
-                       <div className="act-info">
-                          <RefreshCw size={14} className="blue"/>
-                          <div className="act-text">
-                             <strong>{log.action}</strong>
-                             <span>{log.reason}</span>
-                          </div>
-                       </div>
-                       <span className="act-time">{log.time}</span>
-                    </div>
-                  ))}
-               </div>
-            </section>
-
-            <section className="card mt-20 stats-card">
-               <div className="head">
-                  <h3>GLOBAL YIELD OPTIMIZER</h3>
-                  <div className="gib-badge">ON</div>
-               </div>
-               <div className="yield-stat mt-15">
-                  <span>Current Yield Index</span>
-                  <strong>1.05</strong>
-               </div>
-               <button className="btn-full mt-10">REAL TIME DATA SYNC</button>
-            </section>
-         </aside>
+          <div className="smart-tip">
+            <Lightbulb size={24} color="#3b82f6"/>
+            <div>
+              <strong>Hızlı İpucu</strong>
+              <p>Hafta içi kurumsal misafirlerin akşam yemeği harcamaları ortalamanın üzerinde. Akşam yemeği + İçecek paketi oluşturmak ek %8 ciro sağlayabilir.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style>{`
-        .ai-container {
-          padding: 30px;
-          background: #f8fafc;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .icon-gray { color: #94a3b8; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .switch-box { display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 10px 20px; border-radius: 12px; }
-        .switch-box span { font-size: 11px; font-weight: 900; color: #64748b; letter-spacing: 0.5px; }
-        .switch { width: 44px; height: 24px; background: #cbd5e1; border-radius: 12px; border: none; position: relative; cursor: pointer; transition: 0.3s; }
-        .s-dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
-        .switch-box.on .switch { background: #10b981; }
-        .switch-box.on .s-dot { left: 23px; }
-
-        .icon-btn { width: 40px; height: 40px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; }
-
-        .ai-grid { display: grid; grid-template-columns: 260px 1fr 300px; gap: 30px; }
-
-        .card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 12px; font-weight: 900; color: #1e293b; margin-bottom: 25px; letter-spacing: 1px; }
-
-        .heatmap-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
-        .heat-cell { width: 100%; height: 32px; border-radius: 4px; cursor: help; transition: 0.2s; }
-        .heat-cell:hover { transform: scale(1.1); z-index: 10; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .ai-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .ai-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .ai-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .ai-head span { font-size: 13px; color: #94a3b8; }
         
-        .h-meta { display: flex; align-items: center; gap: 15px; }
-        .gradient-bar { width: 150px; height: 8px; background: linear-gradient(90deg, #eff6ff, #3b82f6); border-radius: 4px; }
-        .low, .high { font-size: 10px; color: #94a3b8; font-weight: 800; }
+        .btn-ai { padding: 12px 24px; border-radius: 12px; border: none; background: linear-gradient(135deg, #1e293b, #334155); color: white; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .btn-ai:hover { transform: translateY(-2px); background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .btn-ai.loading { opacity: 0.7; cursor: wait; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from {transform: rotate(0deg)} to {transform: rotate(360deg)} }
 
-        .ins-item { display: flex; align-items: center; gap: 12px; padding: 15px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; font-weight: 700; }
-        .ins-item.info { background: #eff6ff; color: #3b82f6; }
-        .ins-item.success { background: #ecfdf5; color: #10b981; }
-        .ins-item.warning { background: #fffbeb; color: #f59e0b; }
-        .ins-item.alert { background: #fff1f2; color: #ef4444; }
+        .ai-grid { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
+        
+        .insight-list { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .il-head { display: flex; justify-content: space-between; align-items: center; }
+        .il-head h3 { font-size: 16px; font-weight: 800; color: #1e293b; }
+        .ai-badge { padding: 4px 10px; border-radius: 20px; background: #f0fdf4; color: #10b981; font-size: 10px; font-weight: 800; border: 1px solid #dcfce7; }
+        
+        .cards { display: flex; flex-direction: column; gap: 16px; }
+        .ins-card { padding: 20px; border-radius: 20px; border: 1.5px solid #f1f5f9; position: relative; overflow: hidden; }
+        .ins-card.high { border-left: 4px solid #ef4444; background: #fffafb; }
+        .ins-card.medium { border-left: 4px solid #f59e0b; background: #fffbeb; }
+        .ins-card.low { border-left: 4px solid #3b82f6; background: #eff6ff; }
+        
+        .ins-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .prio-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .prio-dot.high { background: #ef4444; }
+        .prio-dot.medium { background: #f59e0b; }
+        .prio-dot.low { background: #3b82f6; }
+        .ins-top strong { font-size: 14px; color: #1e293b; flex: 1; }
+        .impact-tag { font-size: 11px; font-weight: 800; color: #10b981; }
+        
+        .ins-card p { font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 16px; }
+        .ins-actions { display: flex; gap: 12px; }
+        .apply-btn { padding: 8px 16px; border-radius: 10px; border: none; background: #1e293b; color: white; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .ignore-btn { background: transparent; border: none; font-size: 12px; font-weight: 700; color: #94a3b8; cursor: pointer; }
 
-        .act-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px 0; border-bottom: 1px solid #f8fafc; }
-        .act-info { display: flex; align-items: flex-start; gap: 12px; }
-        .act-text { display: flex; flex-direction: column; gap: 4px; }
-        .act-text strong { font-size: 12px; color: #1e293b; }
-        .act-text span { font-size: 11px; color: #64748b; line-height: 1.4; }
-        .act-time { font-size: 10px; font-weight: 800; color: #94a3b8; flex-shrink: 0; }
+        .ai-stats { display: flex; flex-direction: column; gap: 20px; }
+        .ai-stat-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; display: flex; align-items: center; gap: 20px; }
+        .asc-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .asc-val { font-size: 24px; font-weight: 900; color: #1e293b; margin: 4px 0; }
+        .asc-trend { font-size: 11px; font-weight: 800; color: #10b981; }
 
-        .yield-stat span { font-size: 11px; color: #94a3b8; font-weight: 800; display: block; margin-bottom: 5px; }
-        .yield-stat strong { font-size: 28px; color: #1e293b; }
+        .stats-box { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; }
+        .stats-box h3 { font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 20px; }
+        .progress-list { display: flex; flex-direction: column; gap: 16px; }
+        .prog-row { display: flex; flex-direction: column; gap: 8px; }
+        .prog-info { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+        .prog-info span { color: #64748b; }
+        .prog-bg { background: #f1f5f9; height: 6px; border-radius: 10px; overflow: hidden; }
+        .prog-bar { height: 100%; border-radius: 10px; }
 
-        .btn-full { width: 100%; padding: 12px; background: #1e293b; color: white; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; border: none; }
-
-        .mini-btn { border: none; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 5px; cursor: pointer; color: #64748b; }
-        .blue { color: #3b82f6; }
-        .legend { display: flex; gap: 20px; }
-        .l-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #94a3b8; font-weight: 800; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .dot.blue { background: #3b82f6; }
-        .dot.green { background: #10b981; }
-
-        .mt-20 { margin-top: 20px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
+        .smart-tip { background: #eff6ff; border-radius: 24px; padding: 24px; display: flex; gap: 16px; }
+        .smart-tip strong { font-size: 14px; color: #1e293b; display: block; margin-bottom: 4px; }
+        .smart-tip p { font-size: 12px; color: #475569; line-height: 1.5; margin: 0; }
       `}</style>
     </div>
   );

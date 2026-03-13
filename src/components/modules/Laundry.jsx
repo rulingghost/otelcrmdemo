@@ -1,191 +1,168 @@
 import React, { useState } from 'react';
-import { 
-  Waves, Search, Plus, 
-  Shirt, Scissors, Clock,
-  CheckCircle, MoreVertical, 
-  User, DollarSign, Printer,
-  Filter, Tag, Trash2
-} from 'lucide-react';
+import { useHotel } from '../../context/HotelContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Shirt, Plus, CheckCircle, Clock, X, Search, Truck } from 'lucide-react';
 
-const activeOrders = [
-  { id: 'L-521', room: '204', type: 'Yıkama + Ütü', items: '3 Gömlek, 2 Pantolon', status: 'processing', time: '12:45' },
-  { id: 'L-522', room: '108', type: 'Kuru Temizleme', items: '1 Takım Elbise', status: 'ready', time: '14:20' },
-  { id: 'L-523', room: '312', type: 'Sadece Ütü', items: '5 Gömlek', status: 'pending', time: '15:10' },
-];
-
-const prices = [
-  { name: 'Gömlek', wash: 45, dry: 85, iron: 30 },
-  { name: 'Pantolon', wash: 55, dry: 95, iron: 35 },
-  { name: 'Ceket', wash: 80, dry: 180, iron: 70 },
-];
+const STATUS_MAP = {
+  bekliyor: { label:'Bekliyor', color:'#f59e0b', bg:'#fffbeb' },
+  yikama:   { label:'Yıkamada', color:'#3b82f6', bg:'#eff6ff' },
+  hazir:    { label:'Hazır', color:'#10b981', bg:'#f0fdf4' },
+  teslim:   { label:'Teslim', color:'#64748b', bg:'#f1f5f9' },
+};
 
 const Laundry = () => {
+  const { reservations, addFolioLine, addNotification } = useHotel();
+  const inHouse = reservations.filter(r=>r.status==='check-in');
+
+  const [orders, setOrders] = useState([
+    { id:'L-001', room:'101', guest:'Ahmet Yılmaz', items:'3 Gömlek, 2 Pantolon', status:'hazir', date:'2026-03-14', total:450, urgent:false },
+    { id:'L-002', room:'205', guest:'Sarah Johnson',  items:'5 Parça Karma',       status:'yikama', date:'2026-03-14', total:275, urgent:true },
+    { id:'L-003', room:'304', guest:'Klaus Weber',    items:'2 Takım Elbise',      status:'bekliyor',date:'2026-03-14', total:600, urgent:false },
+  ]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ room:'', guest:'', items:'', urgent:false, total:'' });
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const submit = (e) => {
+    e.preventDefault();
+    const id = `L-${String(orders.length+1).padStart(3,'0')}`;
+    setOrders(p=>[...p,{...form, id, status:'bekliyor', date:'2026-03-14', total:Number(form.total)}]);
+    addNotification({ type:'info', msg:`Çamaşır siparişi alındı: Oda ${form.room}` });
+    setForm({ room:'', guest:'', items:'', urgent:false, total:'' });
+    setShowForm(false);
+  };
+
+  const updateStatus = (id, status) => {
+    setOrders(p=>p.map(o=>o.id===id?{...o,status}:o));
+    if (status==='teslim') {
+      const o = orders.find(x=>x.id===id);
+      if (o) {
+        const res = inHouse.find(r=>r.room===o.room);
+        if (res) addFolioLine(res.id, { desc:`Çamaşırhane — ${o.items}`, amount:o.total, type:'extra' });
+      }
+      addNotification({ type:'success', msg:`Çamaşır teslim edildi: Oda ${orders.find(o=>o.id===id)?.room}` });
+    }
+  };
+
+  const kpi = [
+    { label:'Bekliyor', val:orders.filter(o=>o.status==='bekliyor').length, color:'#f59e0b' },
+    { label:'Yıkamada', val:orders.filter(o=>o.status==='yikama').length, color:'#3b82f6' },
+    { label:'Hazır',    val:orders.filter(o=>o.status==='hazir').length, color:'#10b981' },
+    { label:'Bugün Gelir',val:`₺${orders.filter(o=>o.status==='teslim').reduce((s,o)=>s+o.total,0).toLocaleString()}`, color:'#8b5cf6' },
+  ];
+
   return (
-    <div className="laundry-container">
-      <div className="header">
-         <div className="title-section">
-            <Shirt size={32} className="icon-blue"/>
-            <div>
-               <h2>Çamaşırhane & Kuru Temizleme</h2>
-               <span>Misafir yıkama talepleri ve kurumsal tekstil yönetimi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn-laundry primary"><Plus size={18}/> YENİ SİPARİŞ OLUŞTUR</button>
-         </div>
+    <div className="lnd-page">
+      <div className="lnd-head">
+        <div><h2><Shirt size={20}/> Çamaşırhane Yönetimi</h2><span>Çamaşır siparişleri, iade ve faturalama</span></div>
+        <button className="btn-primary" onClick={()=>setShowForm(!showForm)}><Plus size={15}/> Yeni Sipariş</button>
       </div>
 
-      <div className="laundry-grid">
-         {/* Order List */}
-         <section className="card list-section">
-            <div className="section-header">
-               <h3>AKTİF SİPARİŞLER</h3>
-               <div className="search-box">
-                  <Search size={16} />
-                  <input type="text" placeholder="Oda veya ID Ara..." />
-               </div>
-            </div>
-            <div className="order-grid">
-               {activeOrders.map((order, idx) => (
-                 <div key={idx} className={`order-card ${order.status}`}>
-                    <div className="o-head">
-                       <span className="room">ODA {order.room}</span>
-                       <span className={`status-tag ${order.status}`}>
-                          {order.status === 'processing' ? 'Yıkanıyor' : order.status === 'ready' ? 'Hazır' : 'Bekliyor'}
-                       </span>
-                    </div>
-                    <div className="o-body">
-                       <strong>{order.type}</strong>
-                       <p>{order.items}</p>
-                    </div>
-                    <div className="o-footer">
-                       <span className="time"><Clock size={12}/> {order.time}</span>
-                       <div className="btns">
-                          <button className="btn-icon"><CheckCircle size={14}/></button>
-                          <button className="btn-icon"><MoreVertical size={14}/></button>
-                       </div>
-                    </div>
-                 </div>
-               ))}
-            </div>
-         </section>
+      <div className="lnd-kpi">
+        {kpi.map((k,i)=>(
+          <div key={i} className="lk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
+        ))}
+      </div>
 
-         {/* Price List & Stats */}
-         <aside className="laundry-sidebar">
-            <section className="card price-card">
-               <div className="section-header">
-                  <h3>FİYAT LİSTESİ (₺)</h3>
-                  <Tag size={16} className="gray"/>
-               </div>
-               <table className="price-table">
-                  <thead>
-                     <tr>
-                        <th>Ürün</th>
-                        <th className="right">Yıkama</th>
-                        <th className="right">Kuru T.</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {prices.map((p, idx) => (
-                       <tr key={idx}>
-                          <td>{p.name}</td>
-                          <td className="right">{p.wash}</td>
-                          <td className="right">{p.dry}</td>
-                       </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </section>
+      <AnimatePresence>
+        {showForm && (
+          <motion.form className="form-card" onSubmit={submit} initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
+            <h3>Yeni Çamaşır Siparişi</h3>
+            <div className="fg-grid">
+              <div className="fg">
+                <label>Oda *</label>
+                <select value={form.room} onChange={e=>{
+                  const r = inHouse.find(r=>r.room===e.target.value);
+                  set('room',e.target.value);
+                  if(r) set('guest',r.guest);
+                }}>
+                  <option value="">Oda seçin</option>
+                  {inHouse.map(r=><option key={r.id} value={r.room}>{r.room} — {r.guest}</option>)}
+                </select>
+              </div>
+              <div className="fg"><label>Toplam Tutar (₺)</label><input type="number" value={form.total} onChange={e=>set('total',e.target.value)} placeholder="0" required/></div>
+              <div className="fg full"><label>Parçalar</label><input value={form.items} onChange={e=>set('items',e.target.value)} placeholder="3 Gömlek, 2 Pantolon..." required/></div>
+              <div className="fg"><label>Acele / Ekspres</label>
+                <button type="button" className={`toggle-btn ${form.urgent?'on':''}`} onClick={()=>set('urgent',!form.urgent)}>
+                  {form.urgent ? '⚡ Acele Sipariş' : 'Normal Sipariş'}
+                </button>
+              </div>
+            </div>
+            <div className="form-foot">
+              <button type="button" className="btn-cancel" onClick={()=>setShowForm(false)}>İptal</button>
+              <button type="submit" className="btn-primary">Sipariş Oluştur</button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
-            <section className="card mt-20 stats-card">
-               <div className="stat-item">
-                  <div className="icon purple"><Waves size={20}/></div>
-                  <div className="info">
-                     <span>Yıkama Kapasitesi</span>
-                     <strong>%68</strong>
-                  </div>
-               </div>
-               <div className="stat-item mt-20">
-                  <div className="icon green"><CheckCircle size={20}/></div>
-                  <div className="info">
-                     <span>Teslime Hazır</span>
-                     <strong>12 Sipariş</strong>
-                  </div>
-               </div>
-            </section>
-         </aside>
+      <div className="lnd-table-wrap">
+        <table className="lnd-table">
+          <thead><tr><th>Sipariş</th><th>Oda / Misafir</th><th>Parçalar</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <tbody>
+            {orders.map((o,i)=>{
+              const st = STATUS_MAP[o.status];
+              return (
+                <motion.tr key={o.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.05}}>
+                  <td>
+                    <div><span className="oid">{o.id}</span>{o.urgent&&<span className="urgent-tag">⚡ Acele</span>}</div>
+                  </td>
+                  <td><div><strong>{o.room}</strong><span>{o.guest}</span></div></td>
+                  <td>{o.items}</td>
+                  <td><strong>₺{o.total.toLocaleString()}</strong></td>
+                  <td><span className="status-tag" style={{background:st.bg,color:st.color}}>{st.label}</span></td>
+                  <td>
+                    <div className="act-btns">
+                      {o.status==='bekliyor' && <button className="mb blue" onClick={()=>updateStatus(o.id,'yikama')}>Yıkamaya Al</button>}
+                      {o.status==='yikama'   && <button className="mb green" onClick={()=>updateStatus(o.id,'hazir')}>Hazır İşaretle</button>}
+                      {o.status==='hazir'    && <button className="mb purple" onClick={()=>updateStatus(o.id,'teslim')}><Truck size={12}/> Teslim Et + Faturalandır</button>}
+                    </div>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <style>{`
-        .laundry-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { color: #64748b; font-size: 14px; }
-
-        .btn-laundry.primary {
-           background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer;
-        }
-
-        .laundry-grid { display: grid; grid-template-columns: 1fr 320px; gap: 30px; }
-
-        .card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .section-header h3 { font-size: 15px; font-weight: 800; color: #1e293b; }
-
-        .search-box {
-           display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px;
-        }
-        .search-box input { background: transparent; border: none; outline: none; font-size: 13px; width: 150px; }
-
-        .order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .order-card {
-           background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: all 0.2s;
-        }
-        .order-card:hover { border-color: #3b82f6; transform: translateY(-3px); }
-        .order-card.ready { border-left: 4px solid #10b981; }
-        .order-card.processing { border-left: 4px solid #3b82f6; }
-        .order-card.pending { border-left: 4px solid #f59e0b; }
-
-        .o-head { display: flex; justify-content: space-between; align-items: center; }
-        .room { font-size: 11px; font-weight: 900; color: #3b82f6; }
-        .status-tag { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
-        .status-tag.ready { background: #ecfdf5; color: #10b981; }
-        .status-tag.processing { background: #eff6ff; color: #3b82f6; }
-        .status-tag.pending { background: #fffbeb; color: #f59e0b; }
-
-        .o-body strong { display: block; font-size: 14px; color: #1e293b; margin-bottom: 5px; }
-        .o-body p { font-size: 12px; color: #64748b; line-height: 1.5; }
-
-        .o-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 15px; }
-        .time { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 5px; }
-        .btns { display: flex; gap: 8px; }
-        .btn-icon { background: white; border: 1px solid #e2e8f0; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; }
-
-        .price-table { width: 100%; border-collapse: collapse; }
-        .price-table th { text-align: left; padding: 10px; font-size: 11px; color: #94a3b8; }
-        .price-table td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #f8fafc; color: #475569; }
-        .price-table .right { text-align: right; }
-
-        .stat-item { display: flex; align-items: center; gap: 15px; }
-        .stat-item .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-        .stat-item .icon.purple { background: #f5f3ff; color: #8b5cf6; }
-        .stat-item .icon.green { background: #ecfdf5; color: #10b981; }
-        .stat-item .info { display: flex; flex-direction: column; }
-        .stat-item .info span { font-size: 12px; color: #94a3b8; font-weight: 700; }
-        .stat-item .info strong { font-size: 16px; color: #1e293b; }
-
-        .gray { color: #94a3b8; }
+        .lnd-page{padding:28px;display:flex;flex-direction:column;gap:18px;}
+        .lnd-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .lnd-head h2{font-size:22px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:10px;}
+        .lnd-head span{font-size:13px;color:#94a3b8;}
+        .btn-primary{padding:10px 18px;border-radius:12px;border:none;background:#3b82f6;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+        .lnd-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+        .lk{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:18px;text-align:center;}
+        .lk strong{display:block;font-size:26px;font-weight:900;margin-bottom:4px;}
+        .lk span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .form-card{background:white;border-radius:16px;border:1px solid #e2e8f0;padding:22px;}
+        .form-card h3{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:16px;}
+        .fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .fg{display:flex;flex-direction:column;gap:6px;}
+        .fg.full{grid-column:1/-1;}
+        .fg label{font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;}
+        .fg input,.fg select{padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;}
+        .toggle-btn{padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:white;font-size:13px;font-weight:700;cursor:pointer;text-align:left;}
+        .toggle-btn.on{background:#fffbeb;border-color:#f59e0b;color:#b45309;}
+        .form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+        .btn-cancel{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
+        .lnd-table-wrap{background:white;border-radius:18px;border:1px solid #e2e8f0;overflow:hidden;}
+        .lnd-table{width:100%;border-collapse:collapse;}
+        .lnd-table thead{background:#f8fafc;}
+        .lnd-table th{text-align:left;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:800;}
+        .lnd-table td{padding:14px 16px;font-size:13px;color:#475569;border-bottom:1px solid #f8fafc;vertical-align:middle;}
+        .lnd-table td strong{display:block;color:#1e293b;font-weight:700;}
+        .lnd-table td span{font-size:11px;color:#94a3b8;}
+        .lnd-table tr:last-child td{border-bottom:none;}
+        .oid{font-family:monospace;font-size:11px;background:#f1f5f9;padding:3px 8px;border-radius:6px;font-weight:700;color:#64748b;margin-right:8px;}
+        .urgent-tag{font-size:10px;font-weight:800;color:#b45309;background:#fffbeb;padding:2px 8px;border-radius:20px;}
+        .status-tag{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;}
+        .act-btns{display:flex;gap:6px;}
+        .mb{padding:6px 12px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+        .mb.blue{background:#eff6ff;color:#3b82f6;}
+        .mb.green{background:#ecfdf5;color:#10b981;}
+        .mb.purple{background:#f5f3ff;color:#8b5cf6;}
       `}</style>
     </div>
   );

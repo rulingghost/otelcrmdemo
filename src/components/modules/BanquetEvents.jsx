@@ -1,280 +1,155 @@
 import React, { useState } from 'react';
-import { 
-  Calendar, Search, Plus, 
-  MapPin, Clock, Users,
-  Utensils, Music, Laptop,
-  CheckCircle, AlertTriangle, ChevronRight,
-  MoreVertical, FileText, LayoutGrid,
-  Bell, User, DollarSign, ArrowRight,
-  Filter, ChevronDown, List as ListIcon
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Plus, Calendar, Clock, MapPin, CheckCircle, X } from 'lucide-react';
 
-const salonStatuses = [
-  { name: 'Balo Salonu', count: '1 etkinlik', items: '1 ürün', capacity: '390 kişi', color: '#f1f5f9' },
-  { name: 'Toplantı Salonu 1', count: '2 etkinlik', items: '4 ürün', capacity: '160 kişi', color: '#3b82f6' },
-  { name: 'Çiçek Salonu', count: '1 etkinlik', items: '3 ürün', capacity: '40 kişi', color: '#f1f5f9' },
-  { name: 'Toplantı Salonu 2', count: '2 etkinlik', items: '2 ürün', capacity: '180 kişi', color: '#eab308' },
-  { name: 'Lale Salonu', count: '2 etkinlik', items: '2 ürün', capacity: '70 kişi', color: '#e11d48' },
-];
-
-const timelineEvents = [
-  { salon: 'Balo Salonu', name: 'Yılmaz & Kaya Düğünü 2024', start: 12, end: 18, type: 'wedding' },
-  { salon: 'Toplantı Salonu 1', name: 'ABC Yazılım Toplantısı', start: 9, end: 14, type: 'corp' },
-  { salon: 'Toplantı Salonu 2', name: 'XYZ Kongresi 2024', start: 10, end: 14, type: 'corp' },
-  { salon: 'Lale Salonu', name: 'XYX Kosmetik Lansmanı', start: 11, end: 16, type: 'corp' },
-  { salon: 'Menekşe Salonu', name: 'Orman & Çevre Eğitimi', start: 14, end: 19, type: 'event' },
-  { salon: 'Menekşe Salonu', name: 'Engin İnşaat Yatırım Toplantısı', start: 8, end: 13, type: 'corp' },
-];
-
-const hours = [8, 9, 10, 11, 12, 13, 14, 15, 18, 20];
+const HALLS = ['Büyük Salon (A)', 'Küçük Salon (B)', 'Havuz Başı', 'Teras', 'Toplantı Odası 1', 'Toplantı Odası 2'];
+const TYPES = ['Düğün','Nişan','Doğum Günü','Toplantı','Seminer','Galası','Özel Kutlama'];
 
 const BanquetEvents = () => {
+  const { addCashTransaction, addNotification } = useHotel();
+  const [events, setEvents] = useState([
+    { id:'EV-001', name:'Yılmaz Düğünü', type:'Düğün', hall:'Büyük Salon (A)', date:'2026-03-16', pax:180, status:'onaylı', total:85000, contact:'Ahmet Yılmaz', phone:'0532 111 2233' },
+    { id:'EV-002', name:'Tech Summit 2026', type:'Seminer', hall:'Toplantı Odası 1', date:'2026-03-15', pax:45, status:'bekliyor', total:22000, contact:'HR Müdürü', phone:'0212 555 4466' },
+    { id:'EV-003', name:'Doğum Günü',     type:'Doğum Günü', hall:'Küçük Salon (B)', date:'2026-03-14', pax:35, status:'devam', total:12500, contact:'Selin Demir', phone:'0533 222 3344' },
+  ]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name:'', type:TYPES[0], hall:HALLS[0], date:'', pax:'', total:'', contact:'', phone:'' });
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const submit = (e) => {
+    e.preventDefault();
+    const id = `EV-${String(events.length+1).padStart(3,'0')}`;
+    setEvents(p=>[...p,{ ...form, id, status:'bekliyor', pax:Number(form.pax), total:Number(form.total) }]);
+    addNotification({ type:'info', msg:`Yeni etkinlik: ${form.name} — ${form.date}` });
+    setForm({ name:'', type:TYPES[0], hall:HALLS[0], date:'', pax:'', total:'', contact:'', phone:'' });
+    setShowForm(false);
+  };
+
+  const updateStatus = (id, status) => {
+    setEvents(p=>p.map(e=>e.id===id?{...e,status}:e));
+    if (status==='tamamlandı') {
+      const ev = events.find(e=>e.id===id);
+      if (ev) addCashTransaction({ type:'gelir', desc:`Etkinlik Geliri — ${ev.name}`, amount:ev.total, method:'EFT/Havale' });
+      addNotification({ type:'success', msg:`Etkinlik tamamlandı ve gelir kaydedildi: ${events.find(e=>e.id===id)?.name}` });
+    }
+  };
+
+  const STATUS_MAP = {
+    bekliyor: { label:'Bekliyor', color:'#f59e0b', bg:'#fffbeb' },
+    onaylı:   { label:'Onaylı', color:'#10b981', bg:'#f0fdf4' },
+    devam:    { label:'Devam Ediyor', color:'#3b82f6', bg:'#eff6ff' },
+    tamamlandı: { label:'Tamamlandı', color:'#64748b', bg:'#f1f5f9' },
+    iptal:    { label:'İptal', color:'#ef4444', bg:'#fef2f2' },
+  };
+
+  const total = events.filter(e=>e.status!=='iptal').reduce((s,e)=>s+e.total,0);
+
   return (
-    <div className="banquet-container">
-      <header className="header">
-         <div className="title-section">
-            <Calendar size={32} className="icon-blue"/>
-            <div>
-               <h2>Banquet & Event Management</h2>
-               <span>Salon rezervasyonları, etkinlik planlama ve operasyonel takip</span>
+    <div className="bq-page">
+      <div className="bq-head">
+        <div><h2><Users size={20}/> Ziyafet & Etkinlik Yönetimi</h2><span>Salon rezervasyonları, organizasyon ve faturalama</span></div>
+        <button className="btn-primary" onClick={()=>setShowForm(!showForm)}><Plus size={15}/> Yeni Etkinlik</button>
+      </div>
+
+      <div className="bq-kpi">
+        {[
+          { label:'Toplam Etkinlik', val:events.length, color:'#3b82f6' },
+          { label:'Bugün', val:events.filter(e=>e.date==='2026-03-14').length, color:'#f59e0b' },
+          { label:'Onaylı', val:events.filter(e=>e.status==='onaylı').length, color:'#10b981' },
+          { label:'Tahmini Gelir', val:`₺${total.toLocaleString()}`, color:'#8b5cf6' },
+        ].map((k,i)=>(
+          <div key={i} className="bk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.form className="form-card" onSubmit={submit} initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
+            <h3>Yeni Etkinlik / Salon Rezervasyonu</h3>
+            <div className="fg-grid">
+              <div className="fg full"><label>Etkinlik Adı *</label><input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Etkinlik adı" required/></div>
+              <div className="fg"><label>Tür</label><select value={form.type} onChange={e=>set('type',e.target.value)}>{TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+              <div className="fg"><label>Salon</label><select value={form.hall} onChange={e=>set('hall',e.target.value)}>{HALLS.map(h=><option key={h}>{h}</option>)}</select></div>
+              <div className="fg"><label>Tarih *</label><input type="date" value={form.date} onChange={e=>set('date',e.target.value)} required/></div>
+              <div className="fg"><label>Kişi Sayısı</label><input type="number" value={form.pax} onChange={e=>set('pax',e.target.value)} placeholder="0"/></div>
+              <div className="fg"><label>Toplam Tutar (₺)</label><input type="number" value={form.total} onChange={e=>set('total',e.target.value)} placeholder="0"/></div>
+              <div className="fg"><label>İletişim Kişisi</label><input value={form.contact} onChange={e=>set('contact',e.target.value)} placeholder="Ad Soyad"/></div>
+              <div className="fg"><label>Telefon</label><input value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="+90 5xx..."/></div>
             </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">YENİ ETKİNLİK EKLE</button>
-            <button className="btn outline">SALON YERLEŞİM PLANI</button>
-            <button className="btn primary red">ACİL DEĞİŞİKLİK</button>
-         </div>
-      </header>
+            <div className="form-foot"><button type="button" className="btn-cancel" onClick={()=>setShowForm(false)}>İptal</button><button type="submit" className="btn-primary">Etkinlik Oluştur</button></div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
-      <div className="banquet-grid">
-         {/* Left: Salon Durumları */}
-         <aside className="left-panel">
-            <section className="card salon-durum-card">
-               <h3>SALON DURUMLARI</h3>
-               <div className="sd-list mt-20">
-                  {salonStatuses.map((s, i) => (
-                    <div key={i} className="sd-item">
-                       <div className="dot" style={{ backgroundColor: s.color }}></div>
-                       <div className="sd-info">
-                          <strong>{s.name}</strong>
-                          <div className="sd-meta">
-                             <span>{s.count}</span>
-                             <span>{s.items}</span>
-                             <span>{s.capacity}</span>
-                          </div>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-               <div className="sd-footer mt-20">
-                  <div className="f-item"><span>%6X Oligiù</span> <strong>995 üon</strong></div>
-                  <div className="f-item"><span>Temizleriıyorr</span> <strong>93</strong></div>
-                  <button className="link-btn mt-10">Kategori Yönetimi <ChevronRight size={14}/></button>
-               </div>
-            </section>
-         </aside>
-
-         {/* Center: Salon Rezervasyon Planı */}
-         <section className="main-content">
-            <div className="card timeline-card">
-               <div className="t-head">
-                  <h3>SALON REZERVASYON PLANI</h3>
-                  <div className="t-date-selector">
-                     <span>23 Nisan | Perş</span>
-                     <ChevronDown size={14}/>
-                  </div>
-                  <div className="t-actions">
-                     <button className="icon-btn"><LayoutGrid size={16}/></button>
-                     <button className="icon-btn"><ListIcon size={16}/></button>
-                  </div>
-               </div>
-               
-               <div className="timeline-wrapper mt-20">
-                  <div className="timeline-header">
-                     <div className="salon-name-col">Pürş.24</div>
-                     <div className="hours-row">
-                        {hours.map(h => (
-                          <div key={h} className="hour-tick">{h.toString().padStart(2, '0')}.00</div>
-                        ))}
-                     </div>
-                  </div>
-                  <div className="timeline-body">
-                     {salonStatuses.map((s, i) => (
-                       <div key={i} className="salon-timeline-row">
-                          <div className="salon-name-col">{s.name}</div>
-                          <div className="p-relative flex-1">
-                             <div className="grid-overlay">
-                                {hours.map(h => <div key={h} className="grid-cell"></div>)}
-                             </div>
-                             {timelineEvents.filter(e => e.salon === s.name).map((e, ei) => (
-                               <div 
-                                 key={ei} 
-                                 className={`event-block ${e.type}`}
-                                 style={{ 
-                                   left: `${(e.start - 8) * (100 / 12)}%`, 
-                                   width: `${(e.end - e.start) * (100 / 12)}%` 
-                                 }}
-                               >
-                                  {e.name}
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-                     ))}
-                  </div>
-               </div>
-               
-               <div className="timeline-stats mt-20">
-                  <div className="stat pulse"><div className="dot green"></div> 100 DOLU</div>
-                  <div className="stat"><div className="dot red"></div> %96 DOLU</div>
-                  <div className="stat"><div className="dot blue"></div> %338.6K</div>
-                  <div className="stat">398 BOŞ</div>
-               </div>
-            </div>
-
-            <div className="card banquet-footer mt-20">
-               <div className="bf-info">BUGÜNKÜ ETKİNLİK: <strong>8</strong></div>
-               <div className="bf-info">BEKLENEN GELİR: <strong>₺450K</strong></div>
-            </div>
-         </section>
-
-         {/* Right: Function Sheet & Approval */}
-         <aside className="right-panel">
-            <section className="card fs-card">
-               <div className="fs-head">
-                  <h3>FUNCTION SHEET</h3>
-                  <MoreVertical size={14}/>
-               </div>
-               <div className="fs-content mt-20">
-                  <div className="fs-profile">
-                     <Users size={16} className="blue"/>
-                     <span>Yılmaz & Kaya Düğünü...</span>
-                  </div>
-                  <div className="fs-details mt-10">
-                     <div className="fs-row"><LayoutGrid size={14}/> Misafir Sayısı: <strong>300</strong></div>
-                     <div className="fs-row"><Utensils size={14}/> Menü: <strong>Gala Menu 1</strong></div>
-                     <div className="fs-row"><Laptop size={14}/> Teknik: <strong>Projeksiyon, Ses Sis.</strong></div>
-                  </div>
-                  <div className="fs-links mt-10">
-                     <button className="btn-link">Programları <ChevronRight size={12}/></button>
-                     <button className="btn-link">Göster... <ChevronRight size={12}/></button>
-                  </div>
-               </div>
-
-               <div className="onay-merkezi mt-30">
-                  <div className="om-head"><h3>ONAY MERKEZİ</h3><MoreVertical size={14}/></div>
-                  <div className="onay-list mt-15">
-                     <div className="onay-item">
-                        <div className="oi-info">
-                           <span>Satın Alma</span>
-                           <small>Sipariş No. 4227</small>
-                        </div>
-                        <div className="oi-val">
-                           <strong>₺ 3,200</strong>
-                           <span className="plus">+2.2s</span>
-                        </div>
-                     </div>
-                     <div className="onay-item mt-10">
-                        <div className="oi-info">
-                           <span>Finans Onayı</span>
-                           <small>Sipariş No. 4227</small>
-                        </div>
-                        <div className="oi-val">
-                           <strong>₺ 3,200</strong>
-                           <span className="plus">+2.3s</span>
-                        </div>
-                     </div>
-                  </div>
-                  <button className="btn-full mt-20">Tümünü Gör...</button>
-               </div>
-            </section>
-         </aside>
+      <div className="ev-cards">
+        {events.map((ev,i)=>{
+          const st = STATUS_MAP[ev.status];
+          return (
+            <motion.div key={ev.id} className="ev-card" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}>
+              <div className="ec-top">
+                <div>
+                  <div className="ev-type">{ev.type}</div>
+                  <h3>{ev.name}</h3>
+                </div>
+                <span className="ev-status" style={{background:st.bg,color:st.color}}>{st.label}</span>
+              </div>
+              <div className="ev-details">
+                <div><MapPin size={13}/> {ev.hall}</div>
+                <div><Calendar size={13}/> {ev.date}</div>
+                <div><Users size={13}/> {ev.pax} kişi</div>
+              </div>
+              <div className="ev-contact">{ev.contact} · {ev.phone}</div>
+              <div className="ec-foot">
+                <strong className="ev-total">₺{ev.total.toLocaleString()}</strong>
+                <div className="act-btns">
+                  {ev.status==='bekliyor'    && <button className="mb green" onClick={()=>updateStatus(ev.id,'onaylı')}>Onayla</button>}
+                  {ev.status==='onaylı'      && <button className="mb blue" onClick={()=>updateStatus(ev.id,'devam')}>Başlatıldı</button>}
+                  {ev.status==='devam'       && <button className="mb purple" onClick={()=>updateStatus(ev.id,'tamamlandı')}>Tamamla & Faturalandır</button>}
+                  {ev.status!=='tamamlandı'&&ev.status!=='iptal' && <button className="mb red" onClick={()=>updateStatus(ev.id,'iptal')}>İptal</button>}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <style>{`
-        .banquet-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #1e293b; }
-        .btn.primary.red { background: #ef4444; color: white; }
-
-        .banquet-grid { display: grid; grid-template-columns: 240px 1fr 280px; gap: 30px; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; margin-bottom: 25px; letter-spacing: 0.5px; }
-
-        .sd-item { display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 10px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-        .sd-info strong { display: block; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
-        .sd-meta { display: flex; gap: 8px; font-size: 9px; font-weight: 800; color: #94a3b8; }
-
-        .t-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .t-date-selector { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 8px 15px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #1e293b; cursor: pointer; }
-        .t-actions { display: flex; gap: 10px; }
-        .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
-
-        .timeline-wrapper { border-radius: 12px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .timeline-header { display: flex; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
-        .salon-name-col { width: 120px; padding: 12px; font-size: 11px; font-weight: 800; color: #64748b; border-right: 1px solid #f1f5f9; }
-        .hours-row { display: flex; flex: 1; }
-        .hour-tick { flex: 1; text-align: center; padding: 12px 0; font-size: 10px; font-weight: 800; color: #94a3b8; border-right: 1px solid #f1f5f9; }
-
-        .salon-timeline-row { display: flex; height: 45px; border-bottom: 1px solid #f1f5f9; }
-        .grid-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; }
-        .grid-cell { flex: 1; border-right: 1px solid #f8fafc; height: 100%; }
-
-        .event-block { position: absolute; height: 30px; top: 7px; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; font-size: 10px; font-weight: 800; color: white; cursor: pointer; z-index: 10; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .event-block.wedding { background: #3b82f6; }
-        .event-block.corp { background: #6366f1; }
-        .event-block.event { background: #8b5cf6; }
-
-        .timeline-stats { display: flex; gap: 20px; }
-        .stat { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 900; color: #64748b; }
-        .stat .dot { width: 8px; height: 8px; }
-
-        .bf-info { display: inline-block; margin-right: 40px; font-size: 13px; font-weight: 800; color: #64748b; }
-        .bf-info strong { color: #1e293b; margin-left: 8px; }
-
-        .fs-profile { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; color: #1e293b; }
-        .fs-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #64748b; margin-bottom: 12px; font-weight: 700; }
-        .fs-row :global(svg) { color: #3b82f6; }
-        .fs-links { display: flex; gap: 10px; }
-        .btn-link { background: #f1f5f9; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-
-        .onay-item { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
-        .oi-info span { display: block; font-size: 12px; font-weight: 700; color: #1e293b; }
-        .oi-info small { font-size: 10px; color: #94a3b8; }
-        .oi-val { text-align: right; }
-        .oi-val strong { display: block; font-size: 14px; color: #1e293b; }
-        .oi-val .plus { font-size: 10px; color: #10b981; font-weight: 800; }
-
-        .btn-full { width: 100%; padding: 12px; background: #f1f5f9; color: #64748b; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid #e2e8f0; }
-
-        .link-btn { border: none; background: transparent; color: #3b82f6; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .blue { color: #3b82f6; }
-        .gray { color: #94a3b8; }
-        .green { color: #10b981; }
-        .red { color: #ef4444; }
-        .mt-20 { margin-top: 20px; }
-        .mt-30 { margin-top: 30px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
-        .flex-1 { flex: 1; }
-        .p-relative { position: relative; }
+        .bq-page{padding:28px;display:flex;flex-direction:column;gap:18px;}
+        .bq-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .bq-head h2{font-size:22px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:10px;}
+        .bq-head span{font-size:13px;color:#94a3b8;}
+        .btn-primary{padding:10px 18px;border-radius:12px;border:none;background:#3b82f6;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+        .bq-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+        .bk{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:18px;text-align:center;}
+        .bk strong{display:block;font-size:26px;font-weight:900;margin-bottom:4px;}
+        .bk span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .form-card{background:white;border-radius:16px;border:1px solid #e2e8f0;padding:22px;}
+        .form-card h3{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:16px;}
+        .fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .fg{display:flex;flex-direction:column;gap:6px;}
+        .fg.full{grid-column:1/-1;}
+        .fg label{font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;}
+        .fg input,.fg select{padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;}
+        .form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+        .btn-cancel{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
+        .ev-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+        .ev-card{background:white;border:1.5px solid #e2e8f0;border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px;}
+        .ec-top{display:flex;justify-content:space-between;align-items:flex-start;}
+        .ev-type{font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px;}
+        .ev-card h3{font-size:16px;font-weight:800;color:#1e293b;}
+        .ev-status{font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+        .ev-details{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#64748b;}
+        .ev-details>div{display:flex;align-items:center;gap:6px;}
+        .ev-contact{font-size:12px;color:#94a3b8;font-style:italic;}
+        .ec-foot{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #f1f5f9;}
+        .ev-total{font-size:18px;font-weight:900;color:#1e293b;}
+        .act-btns{display:flex;gap:6px;flex-wrap:wrap;}
+        .mb{padding:6px 12px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer;}
+        .mb.green{background:#ecfdf5;color:#10b981;}
+        .mb.blue{background:#eff6ff;color:#3b82f6;}
+        .mb.purple{background:#f5f3ff;color:#8b5cf6;}
+        .mb.red{background:#fef2f2;color:#ef4444;}
       `}</style>
     </div>
   );

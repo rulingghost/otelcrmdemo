@@ -1,179 +1,167 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Globe, Search, Plus, 
-  Layers, Package, MapPin,
-  CheckCircle, MoreVertical, 
-  ArrowRight, ShieldCheck, 
-  DollarSign, TrendingUp, Filter,
-  BookOpen, Star
+  Globe, Search, Building, TrendingUp, 
+  MapPin, CheckCircle, ArrowRight,
+  Filter, Calendar, Users, Briefcase,
+  Share2, Zap, LayoutGrid
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const properties = [
-  { id: 1, name: 'Palace Resort & Spa', city: 'Antalya', availability: '82%', inventory: 42, color: '#3b82f6' },
-  { id: 2, name: 'Grand City Hotel', city: 'İstanbul', availability: '64%', inventory: 15, color: '#10b981' },
-  { id: 3, name: 'Blue Bay Hotel', city: 'Muğla', availability: '95%', inventory: 8, color: '#f59e0b' },
-  { id: 4, name: 'Ski Mountain Lodge', city: 'Erzurum', availability: '24%', inventory: 112, color: '#8b5cf6' },
-];
 
 const CRS = () => {
+  const [search, setSearch] = useState('');
+
+  const hotels = [
+    { id: 1, name: 'Grand Hotel Istanbul', city: 'Istanbul', occupancy: 92, availability: 12, rate: '₺4,200', type: 'City' },
+    { id: 2, name: 'Antalya Resort & Spa', city: 'Antalya', occupancy: 85, availability: 45, rate: '₺3,800', type: 'Resort' },
+    { id: 3, name: 'Boutique Hotel Izmir', city: 'Izmir', occupancy: 74, availability: 18, rate: '₺2,900', type: 'Boutique' },
+    { id: 4, name: 'Alpine Lodge Erzurum', city: 'Erzurum', occupancy: 98, availability: 2, rate: '₺5,400', type: 'Mountain' },
+  ];
+
   return (
-    <div className="crs-container">
-      <header className="header">
-         <div className="title-section">
-            <Globe size={32} className="icon-blue"/>
-            <div>
-               <h2>Central Reservation System (CRS)</h2>
-               <span>Zincir otel yönetimi ve merkezi satış havuzu</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline"><Search size={18}/> GLOBAL ARA</button>
-            <button className="btn primary"><Plus size={18}/> MERKEZİ KAYIT</button>
-         </div>
-      </header>
+    <div className="crs-page">
+      <div className="crs-head">
+        <div>
+          <h2><Globe size={20}/> Merkezi Rezervasyon Sistemi (CRS)</h2>
+          <span>Zincir oteller arası çapraz rezervasyon ve merkezi müsaitlik takibi</span>
+        </div>
+        <div className="head-actions">
+          <button className="btn-secondary"><Share2 size={14}/> Bağlantıları Yönet</button>
+          <button className="btn-primary">Hızlı Müsaitlik Sorgula</button>
+        </div>
+      </div>
+
+      <div className="crs-search-bar">
+        <div className="search-box">
+          <Search size={18} color="#94a3b8"/>
+          <input 
+            placeholder="Tüm otellerde misafir adı veya rezervasyon no ara..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="search-filters">
+          <div className="sf-item"><Calendar size={14}/> 15 Mar - 20 Mar</div>
+          <div className="sf-item"><Users size={14}/> 2 Yetişkin</div>
+          <button className="btn-go"><Zap size={14}/> Sorgula</button>
+        </div>
+      </div>
 
       <div className="crs-grid">
-         {/* Group Performance Summary */}
-         <section className="stats-grid">
-            <div className="card stat-card">
-               <span className="label">Toplam Müsaitlik (Grup)</span>
-               <strong className="val">1,245 Oda</strong>
-               <div className="trend pos"><TrendingUp size={14}/> 12 Yeni Rezervasyon (Son 1saat)</div>
+        {hotels.map((h, i) => (
+          <motion.div 
+            key={h.id} 
+            className="hotel-crs-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <div className={`hcc-type ${h.type.toLowerCase()}`}>{h.type}</div>
+            <div className="hcc-head">
+              <div className="hcc-icon"><Building size={24}/></div>
+              <div className="hcc-info">
+                <strong>{h.name}</strong>
+                <span><MapPin size={12}/> {h.city}</span>
+              </div>
             </div>
-            <div className="card stat-card">
-               <span className="label">Ortalama Grup ADR</span>
-               <strong className="val">$ 188.50</strong>
-               <div className="trend pos"><TrendingUp size={14}/> 5.2% vs Dün</div>
+
+            <div className="hcc-stats">
+              <div className="hccs">
+                <span>Doluluk</span>
+                <div className="hccs-val">
+                  <strong>%{h.occupancy}</strong>
+                  <div className="hccs-bar-bg"><div className="hccs-bar" style={{ width: `${h.occupancy}%`, background: h.occupancy > 90 ? '#ef4444' : '#10b981' }}/></div>
+                </div>
+              </div>
+              <div className="hccs">
+                <span>Müsait Oda</span>
+                <strong className="hccs-big">{h.availability}</strong>
+              </div>
             </div>
-         </section>
 
-         {/* Property List Table */}
-         <section className="card list-section">
-            <div className="section-header">
-               <h3>ZİNCİR OTEL ENVANTERİ</h3>
-               <div className="search-box">
-                  <Search size={16} />
-                  <input type="text" placeholder="Şube veya Şehir Ara..." />
-               </div>
+            <div className="hcc-bottom">
+              <div className="hcc-price">
+                <span>Başlayan Fiyat</span>
+                <strong>{h.rate}</strong>
+              </div>
+              <button className="btn-res">Rezervasyon Yap <ArrowRight size={14}/></button>
             </div>
-            <table className="crs-table">
-               <thead>
-                  <tr>
-                     <th>Otel Adı</th>
-                     <th>Lokasyon</th>
-                     <th>Müsaitlik</th>
-                     <th>Açık Envanter</th>
-                     <th>Global Satış</th>
-                     <th>Aksiyon</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {properties.map((p, idx) => (
-                    <tr key={idx}>
-                       <td><strong>{p.name}</strong></td>
-                       <td>
-                          <div className="loc">
-                             <MapPin size={12} className="gray"/> {p.city}
-                          </div>
-                       </td>
-                       <td>
-                          <div className="avail-box">
-                             <div className="p-bar"><div className="fill" style={{ width: p.availability, background: p.color }}></div></div>
-                             <span>{p.availability}</span>
-                          </div>
-                       </td>
-                       <td><span className="inv-badge">{p.inventory} Kategoride Boş</span></td>
-                       <td><span className="status-badge live">CANLI</span></td>
-                       <td><button className="icon-btn"><ArrowRight size={16}/></button></td>
-                    </tr>
-                  ))}
-               </tbody>
-            </table>
-         </section>
+          </motion.div>
+        ))}
+      </div>
 
-         {/* Right Sidebar: CRS Controls */}
-         <aside className="crs-sidebar">
-            <section className="card global-card">
-               <Layers size={24} className="blue"/>
-               <h3>Global Stop-Sell</h3>
-               <p>Tüm şubelerde seçili tarihler için satışı kapatın.</p>
-               <button className="btn-full outline mt-15">TARİHLERİ SEÇ</button>
-            </section>
-
-            <section className="card promo-card mt-20">
-               <Star size={24} className="gold"/>
-               <h3>Global Promosyon</h3>
-               <p>Zincir geneli "Early Booking" kampanyası tanımla.</p>
-               <button className="btn-full primary mt-15">KAMPANYA BAŞLAT</button>
-            </section>
-         </aside>
+      <div className="crs-footer">
+        <h3>Son Merkezi İşlemler</h3>
+        <div className="crs-log">
+          {[
+            { id: 'CRS-441', action: 'Rezervasyon Transferi', from: 'Antalya', to: 'Istanbul', guest: 'Ahmet Yılmaz', status: 'success' },
+            { id: 'CRS-440', action: 'Grup Blokaj Paylaşımı', from: 'HQ', to: 'All Hotels', guest: 'Tech-A Group', status: 'success' },
+            { id: 'CRS-439', action: 'Müsaitlik Senkronizasyonu', from: 'Channel', to: 'CRS Hub', guest: 'System', status: 'success' },
+          ].map(log => (
+            <div key={log.id} className="log-row">
+              <span className="log-id">#{log.id}</span>
+              <span className="log-act">{log.action}</span>
+              <div className="log-path">{log.from} <ArrowRight size={10}/> {log.to}</div>
+              <span className="log-guest">{log.guest}</span>
+              <div className="log-status"><CheckCircle size={14} color="#10b981"/> Başarılı</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <style>{`
-        .crs-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; border: none; font-size: 14px; }
-        .btn.primary { background: #1e293b; color: white; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .crs-grid { display: grid; grid-template-columns: 1fr 300px; gap: 30px; }
+        .crs-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .crs-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .crs-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .crs-head span { font-size: 13px; color: #94a3b8; }
         
-        .stats-grid { grid-column: 1 / 2; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .stat-card { padding: 25px; display: flex; flex-direction: column; gap: 8px; }
-        .stat-card .label { font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 1px; }
-        .stat-card .val { font-size: 24px; font-weight: 900; color: #1e293b; }
-        .trend { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; }
-        .trend.pos { color: #10b981; }
+        .head-actions { display: flex; gap: 10px; }
+        .btn-secondary { padding: 10px 18px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: white; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { padding: 10px 18px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: 700; font-size: 13px; cursor: pointer; }
 
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .crs-search-bar { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 16px; display: flex; gap: 16px; align-items: center; }
+        .search-box { flex: 1; display: flex; align-items: center; gap: 12px; background: #f8fafc; border-radius: 12px; padding: 10px 16px; }
+        .search-box input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #1e293b; }
+        
+        .search-filters { display: flex; gap: 8px; align-items: center; }
+        .sf-item { background: #f1f5f9; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 8px; }
+        .btn-go { background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .section-header h3 { font-size: 13px; font-weight: 900; color: #1e293b; }
+        .crs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .hotel-crs-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; position: relative; overflow: hidden; transition: 0.3s; }
+        .hotel-crs-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.05); }
+        
+        .hcc-type { position: absolute; top: 0; right: 0; background: #f1f5f9; padding: 4px 14px; border-bottom-left-radius: 14px; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+        .hotel-crs-card.city .hcc-type { background: #eff6ff; color: #3b82f6; }
+        
+        .hcc-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+        .hcc-icon { width: 52px; height: 52px; background: #f8fafc; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #3b82f6; border: 1px solid #f1f5f9; }
+        .hcc-info strong { display: block; font-size: 16px; color: #1e293b; margin-bottom: 2px; }
+        .hcc-info span { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
 
-        .search-box { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px; }
-        .search-box input { background: transparent; border: none; outline: none; font-size: 13px; width: 180px; }
+        .hcc-stats { display: flex; gap: 24px; margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 16px; }
+        .hccs { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .hccs span { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .hccs-val { display: flex; align-items: center; gap: 8px; }
+        .hccs-val strong { font-size: 14px; color: #1e293b; }
+        .hccs-bar-bg { flex: 1; height: 5px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+        .hccs-bar { height: 100%; border-radius: 4px; }
+        .hccs-big { font-size: 20px; font-weight: 900; color: #1e293b; }
 
-        .crs-table { width: 100%; border-collapse: collapse; }
-        .crs-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
-        .crs-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid #f8fafc; color: #475569; }
+        .hcc-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+        .hcc-price span { display: block; font-size: 10px; color: #94a3b8; font-weight: 600; }
+        .hcc-price strong { font-size: 18px; font-weight: 900; color: #1e293b; }
+        .btn-res { background: transparent; border: 1.5px solid #1e293b; color: #1e293b; padding: 8px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-res:hover { background: #1e293b; color: white; }
 
-        .loc { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 12px; font-weight: 700; }
-
-        .avail-box { display: flex; align-items: center; gap: 10px; width: 150px; }
-        .p-bar { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
-        .fill { height: 100%; }
-        .avail-box span { font-size: 11px; font-weight: 800; color: #1e293b; }
-
-        .inv-badge { background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #64748b; }
-        .status-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 20px; }
-        .status-badge.live { background: #ecfdf5; color: #10b981; display: flex; align-items: center; gap: 5px; }
-        .status-badge.live::before { content: ''; width: 4px; height: 4px; background: #10b981; border-radius: 50%; }
-
-        .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #3b82f6; }
-
-        .btn-full { width: 100%; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn-full.primary { background: #3b82f6; color: white; }
-        .btn-full.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .blue { color: #3b82f6; }
-        .gray { color: #94a3b8; }
-        .gold { color: #f59e0b; }
-
-        .mt-20 { margin-top: 20px; }
+        .crs-footer { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; }
+        .crs-footer h3 { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 20px; }
+        .crs-log { display: flex; flex-direction: column; }
+        .log-row { display: grid; grid-template-columns: 80px 180px 150px 1fr 120px; padding: 12px 16px; border-bottom: 1px solid #f8fafc; align-items: center; font-size: 12px; }
+        .log-id { font-family: monospace; font-weight: 800; color: #3b82f6; }
+        .log-act { font-weight: 700; color: #1e293b; }
+        .log-path { font-size: 11px; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .log-guest { font-weight: 600; color: #475569; }
+        .log-status { display: flex; align-items: center; gap: 6px; font-weight: 800; color: #10b981; }
       `}</style>
     </div>
   );

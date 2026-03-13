@@ -1,210 +1,223 @@
 import React, { useState } from 'react';
-import { 
-  Waves, Search, Plus, 
-  Clock, Calendar, Star,
-  User, CheckCircle, ArrowRight,
-  MoreVertical, Bell, Filter,
-  Smartphone, Package, Heart,
-  Zap, LayoutGrid, Award
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Waves, Plus, Calendar, Clock, User, CheckCircle, X, Star } from 'lucide-react';
 
-const treatments = [
-  { name: 'Massajjer Oil', size: '250 ml', status: 'ready' },
-  { name: 'Aromaterapi', size: '1100 ml', status: 'ready' },
-  { name: 'Eukaljptus Yağ', size: '1130 ml', status: 'ready' },
-  { name: 'Dolunay Salonu', size: '6 ürün', status: 'ready' },
+const SERVICES = [
+  { id:'SP-01', name:'Klasik Masaj (60dk)',    price:850,  duration:60, category:'Masaj' },
+  { id:'SP-02', name:'Aromaterapi (90dk)',      price:1200, duration:90, category:'Masaj' },
+  { id:'SP-03', name:'Hamam & Kese',           price:600,  duration:75, category:'Hamam' },
+  { id:'SP-04', name:'Yüz Bakımı',             price:950,  duration:60, category:'Bakım' },
+  { id:'SP-05', name:'Manikür & Pedikür',      price:550,  duration:90, category:'Güzellik' },
+  { id:'SP-06', name:'VIP Paket (180dk)',       price:2800, duration:180,category:'Paket' },
+  { id:'SP-07', name:'Çift Masajı (60dk)',      price:1600, duration:60, category:'Masaj' },
+  { id:'SP-08', name:'Saç Bakımı & Stil',      price:700,  duration:60, category:'Güzellik' },
 ];
 
-const therapists = ['Aylin', 'Murat', 'Linda'];
-
-const spaAppointments = [
-  { therapist: 'Aylin', guest: 'Deniz K.', type: 'Aroma Terapi', start: '09:00', end: '11:00' },
-  { therapist: 'Murat', guest: 'Gülcen S.', type: 'Sauna Ritueli', start: '11:00', end: '13:00' },
-  { therapist: 'Linda', guest: 'Canan L.', type: 'Hot Güne Massaj', start: '13:00', end: '16:00' },
-  { therapist: 'Murat', guest: 'Merve E.', type: 'Classik Masaj', start: '16:00', end: '18:00' },
-];
+const SLOTS = ['09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00','18:00'];
 
 const SpaManagement = () => {
+  const { reservations, addFolioLine, addCashTransaction, addNotification } = useHotel();
+  const inHouse = reservations.filter(r=>r.status==='check-in');
+
+  const [appointments, setAppointments] = useState([
+    { id:'A-001', service:'Klasik Masaj (60dk)', guest:'Ahmet Yılmaz', room:'101', time:'10:00', date:'2026-03-14', status:'tamamlandı', price:850 },
+    { id:'A-002', service:'Aromaterapi (90dk)',   guest:'Sarah Johnson', room:'205', time:'14:00', date:'2026-03-14', status:'bekliyor', price:1200 },
+    { id:'A-003', service:'VIP Paket (180dk)',    guest:'Klaus Weber',   room:'304', time:'16:00', date:'2026-03-14', status:'bekliyor', price:2800 },
+  ]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ service:'SP-01', guestRes:'', date:'2026-03-14', time:'10:00', billing:'folio' });
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const selService = SERVICES.find(s=>s.id===form.service);
+  const selRes     = inHouse.find(r=>r.id===form.guestRes);
+
+  const submit = (e) => {
+    e.preventDefault();
+    const id = `A-${String(appointments.length+1).padStart(3,'0')}`;
+    setAppointments(p=>[...p,{
+      id, service:selService.name, guest:selRes?.guest||'Walk-in',
+      room:selRes?.room||'—', time:form.time, date:form.date, status:'bekliyor', price:selService.price
+    }]);
+    addNotification({ type:'info', msg:`SPA randevusu oluşturuldu: ${selService.name} — ${form.time}` });
+    setForm({ service:'SP-01', guestRes:'', date:'2026-03-14', time:'10:00', billing:'folio' });
+    setShowForm(false);
+  };
+
+  const complete = (appt) => {
+    setAppointments(p=>p.map(a=>a.id===appt.id?{...a,status:'tamamlandı'}:a));
+    const res = inHouse.find(r=>r.guest===appt.guest);
+    if (res) {
+      addFolioLine(res.id, { desc:`SPA — ${appt.service}`, amount:appt.price, type:'extra' });
+      addNotification({ type:'success', msg:`SPA hizmeti faturaya eklendi: ${appt.guest}` });
+    } else {
+      addCashTransaction({ type:'gelir', desc:`SPA — ${appt.service} (${appt.guest})`, amount:appt.price, method:'Nakit' });
+      addNotification({ type:'success', msg:`SPA hizmeti kasaya eklendi: ₺${appt.price}` });
+    }
+  };
+
+  const cats = ['Tümü',...new Set(SERVICES.map(s=>s.category))];
+  const [cat, setCat] = useState('Tümü');
+  const filteredSvc = cat==='Tümü' ? SERVICES : SERVICES.filter(s=>s.category===cat);
+
+  const todayTotal = appointments.filter(a=>a.status==='tamamlandı').reduce((s,a)=>s+a.price,0);
+
   return (
-    <div className="spa-container">
-      <header className="header">
-         <div className="title-section">
-            <Waves size={32} className="icon-blue"/>
-            <div>
-               <h2>SPA & Wellness Management</h2>
-               <span>Randevu takvimi, terapist planlama ve paket satış takibi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">YENİ RANDEVU</button>
-            <button className="btn outline">PAKET SATIŞI</button>
-            <button className="btn primary red"><Calendar size={18}/> TERAPİST ÇİZELGESİ</button>
-         </div>
-      </header>
-
-      <div className="spa-grid">
-         {/* Left: Quick Sales */}
-         <aside className="left-panel">
-            <section className="card product-card">
-               <h3>HIZLI SATIŞ</h3>
-               <div className="prod-list">
-                  {treatments.map((t, i) => (
-                    <div key={i} className="prod-item">
-                       <div className="p-icon"><Package size={16}/></div>
-                       <div className="p-info">
-                          <strong>{t.name}</strong>
-                          <span>{t.size} • ₺22</span>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </section>
-            
-            <section className="card stats-mini mt-20">
-               <div className="stat"><span>Toplam Randevu</span> <strong>17</strong></div>
-               <div className="stat"><span>Üye Müşteri</span> <strong>9</strong></div>
-            </section>
-         </aside>
-
-         {/* Center: Appointment Timeline */}
-         <section className="main-content">
-            <div className="card timeline-card">
-               <div className="c-head">
-                  <h3>SPA RANDEVU TAKVİMİ</h3>
-                  <div className="date">24 Nisan Pazartesi</div>
-               </div>
-               
-               <div className="spa-timeline">
-                  <div className="t-header">
-                     <div className="therapist-col">Terapist</div>
-                     {['09:00', '10:00', '11:00', '12:00', '13:00', '16:00', '19:00', '22:00'].map(t => (
-                       <div key={t} className="time-col">{t}</div>
-                     ))}
-                  </div>
-                  <div className="t-body">
-                     {therapists.map((th, i) => (
-                       <div key={i} className="t-row">
-                          <div className="therapist-col"><strong>{th}</strong></div>
-                          <div className="slots">
-                             {spaAppointments.filter(a => a.therapist === th).map((a, ai) => (
-                               <div 
-                                 key={ai} 
-                                 className="app-block"
-                                 style={{ 
-                                   left: `${(parseInt(a.start) - 9) * 12}%`,
-                                   width: `${(parseInt(a.end) - parseInt(a.start)) * 12}%` 
-                                 }}
-                               >
-                                  <strong>{a.guest}</strong>
-                                  <span>{a.type}</span>
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-                     ))}
-                  </div>
-               </div>
-            </div>
-            
-            <div className="footer-stats mt-20">
-               <span>BUGÜNKÜ CİRO: <strong>₺85K</strong></span>
-               <span>RANDEVU DOLULUK: <strong>%92</strong></span>
-            </div>
-         </section>
-
-         {/* Right: Member Profile */}
-         <aside className="right-panel">
-            <section className="card profile-card">
-               <h3>ÜYE PROFİLİ & PAKET</h3>
-               <div className="u-info">
-                  <div className="u-avatar">Z</div>
-                  <div className="u-text">
-                     <strong>Zeynep Yildiz</strong>
-                     <span className="gold">Platinum</span>
-                  </div>
-               </div>
-               <div className="u-stats mt-20">
-                  <div className="u-stat"><span>Üyelik Tipi</span> <strong>Platinum</strong></div>
-                  <div className="u-stat"><span>Kalan Masaj Hakkı</span> <strong className="blue">4</strong></div>
-               </div>
-               
-               <div className="usage mt-20">
-                  <div className="usage-item">
-                     <Star size={14} className="gold"/>
-                     <span>Aroma Terapi</span>
-                     <strong>5/7</strong>
-                  </div>
-               </div>
-               <button className="btn-full mt-20">Tümünü Gör...</button>
-            </section>
-         </aside>
+    <div className="spa-page">
+      <div className="spa-head">
+        <div><h2><Waves size={20}/> SPA & Wellness Merkezi</h2><span>Randevu, hizmet ve gelir yönetimi</span></div>
+        <button className="btn-primary" onClick={()=>setShowForm(!showForm)}><Plus size={15}/> Randevu Al</button>
       </div>
 
+      <div className="spa-kpi">
+        {[
+          { label:'Bugün Randevu', val:appointments.filter(a=>a.date==='2026-03-14').length, color:'#8b5cf6' },
+          { label:'Bekliyor', val:appointments.filter(a=>a.status==='bekliyor').length, color:'#f59e0b' },
+          { label:'Tamamlanan', val:appointments.filter(a=>a.status==='tamamlandı').length, color:'#10b981' },
+          { label:'Günlük Gelir', val:`₺${todayTotal.toLocaleString()}`, color:'#3b82f6' },
+        ].map((k,i)=>(
+          <div key={i} className="spk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
+        ))}
+      </div>
+
+      <div className="spa-layout">
+        {/* Services Panel */}
+        <div className="svc-panel">
+          <div className="sp-head">
+            <h3>Hizmetler & Fiyatlar</h3>
+            <div className="cat-tabs">
+              {cats.map(c=><button key={c} className={`ct ${cat===c?'active':''}`} onClick={()=>setCat(c)}>{c}</button>)}
+            </div>
+          </div>
+          <div className="svc-list">
+            {filteredSvc.map(svc=>(
+              <div key={svc.id} className="svc-card">
+                <div className="sc-left">
+                  <strong>{svc.name}</strong>
+                  <span><Clock size={11}/> {svc.duration} dk · <Star size={11}/> {svc.category}</span>
+                </div>
+                <div className="sc-price">₺{svc.price.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Appointments */}
+        <div className="appt-panel">
+          <h3>Bugünkü Randevular ({appointments.filter(a=>a.date==='2026-03-14').length})</h3>
+          <div className="appt-list">
+            {appointments.map((a,i)=>(
+              <motion.div key={a.id} className={`appt-card ${a.status}`} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.05}}>
+                <div className="ac-time"><Clock size={14}/>{a.time}</div>
+                <div className="ac-info">
+                  <strong>{a.service}</strong>
+                  <span><User size={11}/> {a.guest} · Oda {a.room}</span>
+                </div>
+                <div className="ac-right">
+                  <div className="ac-price">₺{a.price.toLocaleString()}</div>
+                  {a.status==='bekliyor' ? (
+                    <button className="complete-btn" onClick={()=>complete(a)}>
+                      <CheckCircle size={14}/> Tamamla
+                    </button>
+                  ) : (
+                    <span className="done-tag"><CheckCircle size={13} color="#10b981"/> Tamamlandı</span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Appointment Form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div className="modal-overlay" onClick={()=>setShowForm(false)} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+            <motion.form className="spa-modal" onClick={e=>e.stopPropagation()} onSubmit={submit} initial={{scale:.9}} animate={{scale:1}}>
+              <div className="modal-head"><h3>Yeni SPA Randevusu</h3><button type="button" onClick={()=>setShowForm(false)}><X size={18}/></button></div>
+              <div style={{padding:'22px',display:'flex',flexDirection:'column',gap:'14px'}}>
+                <div className="fg"><label>Hizmet *</label>
+                  <select value={form.service} onChange={e=>set('service',e.target.value)}>
+                    {SERVICES.map(s=><option key={s.id} value={s.id}>{s.name} — ₺{s.price} ({s.duration}dk)</option>)}
+                  </select>
+                </div>
+                <div className="fg"><label>Misafir (Oda Faturalama)</label>
+                  <select value={form.guestRes} onChange={e=>set('guestRes',e.target.value)}>
+                    <option value="">Walk-in (Nakit)</option>
+                    {inHouse.map(r=><option key={r.id} value={r.id}>Oda {r.room} — {r.guest}</option>)}
+                  </select>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                  <div className="fg"><label>Tarih</label><input type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+                  <div className="fg"><label>Saat</label>
+                    <select value={form.time} onChange={e=>set('time',e.target.value)}>
+                      {SLOTS.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {selService && (
+                  <div className="price-box">
+                    <span>Seçilen: {selService.name}</span>
+                    <strong>₺{selService.price.toLocaleString()}</strong>
+                  </div>
+                )}
+              </div>
+              <div className="modal-foot">
+                <button type="button" className="btn-cancel" onClick={()=>setShowForm(false)}>İptal</button>
+                <button type="submit" className="btn-primary">Randevu Oluştur</button>
+              </div>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
-        .spa-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-        .btn.primary.red { background: #ef4444; color: white; display: flex; align-items: center; gap: 10px; }
-
-        .spa-grid { display: grid; grid-template-columns: 260px 1fr 300px; gap: 30px; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 12px; font-weight: 900; color: #1e293b; margin-bottom: 20px; letter-spacing: 0.5px; }
-
-        .prod-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f8fafc; }
-        .p-icon { width: 32px; height: 32px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
-        .p-info { display: flex; flex-direction: column; }
-        .p-info strong { font-size: 12px; color: #1e293b; }
-        .p-info span { font-size: 10px; color: #94a3b8; }
-
-        .stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
-        .stat strong { color: #1e293b; }
-
-        .c-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .date { font-size: 12px; font-weight: 700; color: #64748b; }
-
-        .spa-timeline { width: 100%; border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden; }
-        .t-header { display: flex; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
-        .therapist-col { width: 120px; padding: 12px; font-size: 11px; font-weight: 800; color: #94a3b8; border-right: 1px solid #f1f5f9; }
-        .time-col { flex: 1; text-align: center; font-size: 11px; color: #94a3b8; padding: 12px; border-right: 1px solid #f1f5f9; }
-
-        .t-row { display: flex; height: 70px; border-bottom: 1px solid #f1f5f9; }
-        .slots { flex: 1; position: relative; height: 100%; }
-        .app-block { position: absolute; top: 10px; height: 50px; background: #3b82f6; border-radius: 8px; padding: 10px; color: white; display: flex; flex-direction: column; justify-content: center; }
-        .app-block strong { font-size: 11px; }
-        .app-block span { font-size: 9px; opacity: 0.8; }
-
-        .footer-stats { display: flex; gap: 30px; font-size: 13px; color: #64748b; }
-        .footer-stats strong { color: #1e293b; }
-
-        .u-info { display: flex; align-items: center; gap: 15px; }
-        .u-avatar { width: 44px; height: 44px; background: #eff6ff; color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-        .u-text strong { display: block; font-size: 14px; color: #1e293b; }
-        .gold { color: #f59e0b; font-size: 11px; font-weight: 800; }
-        
-        .u-stat { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: #64748b; }
-        .u-stat strong { color: #1e293b; }
-
-        .usage-item { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #475569; padding: 10px; background: #f8fafc; border-radius: 8px; }
-        .btn-full { width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; }
-
-        .blue { color: #3b82f6; }
-        .mt-20 { margin-top: 20px; }
+        .spa-page{padding:28px;display:flex;flex-direction:column;gap:20px;}
+        .spa-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .spa-head h2{font-size:22px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:10px;}
+        .spa-head span{font-size:13px;color:#94a3b8;}
+        .btn-primary{padding:10px 18px;border-radius:12px;border:none;background:#8b5cf6;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+        .spa-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+        .spk{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:18px;text-align:center;}
+        .spk strong{display:block;font-size:24px;font-weight:900;margin-bottom:4px;}
+        .spk span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .spa-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+        .svc-panel,.appt-panel{background:white;border-radius:20px;border:1px solid #e2e8f0;padding:20px;}
+        .sp-head{margin-bottom:14px;}
+        .sp-head h3,.appt-panel h3{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:10px;}
+        .cat-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+        .ct{padding:5px 12px;border-radius:20px;border:1.5px solid #e2e8f0;background:white;font-size:11px;font-weight:700;cursor:pointer;color:#64748b;}
+        .ct.active{background:#8b5cf6;color:white;border-color:#8b5cf6;}
+        .svc-list{display:flex;flex-direction:column;gap:8px;}
+        .svc-card{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border-radius:10px;}
+        .sc-left strong{font-size:13px;color:#1e293b;font-weight:700;display:block;}
+        .sc-left span{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;margin-top:3px;}
+        .sc-price{font-size:16px;font-weight:900;color:#8b5cf6;}
+        .appt-list{display:flex;flex-direction:column;gap:10px;}
+        .appt-card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;border:1.5px solid #e2e8f0;background:white;}
+        .appt-card.tamamlandı{opacity:.7;background:#f8fafc;}
+        .ac-time{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:900;color:#8b5cf6;flex-shrink:0;}
+        .ac-info{flex:1;}
+        .ac-info strong{display:block;font-size:13px;color:#1e293b;font-weight:700;}
+        .ac-info span{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;}
+        .ac-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+        .ac-price{font-size:15px;font-weight:900;color:#1e293b;}
+        .complete-btn{padding:6px 14px;border-radius:8px;border:none;background:#8b5cf6;color:white;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .done-tag{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#10b981;}
+        .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .spa-modal{background:white;border-radius:22px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.4);width:480px;}
+        .modal-head{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;}
+        .modal-head h3{font-size:16px;font-weight:800;color:#1e293b;}
+        .modal-head button{background:transparent;border:none;color:#94a3b8;cursor:pointer;}
+        .modal-foot{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;}
+        .btn-cancel{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
+        .fg{display:flex;flex-direction:column;gap:6px;}
+        .fg label{font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;}
+        .fg input,.fg select{padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;}
+        .price-box{display:flex;justify-content:space-between;background:#f5f3ff;padding:14px 16px;border-radius:12px;}
+        .price-box span{font-size:13px;color:#64748b;}
+        .price-box strong{font-size:16px;font-weight:900;color:#8b5cf6;}
       `}</style>
     </div>
   );

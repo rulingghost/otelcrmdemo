@@ -1,298 +1,209 @@
 import React, { useState } from 'react';
-import { 
-  Box, Search, Plus, 
-  ShoppingCart, RefreshCw, BarChart,
-  ChevronDown, Filter, MoreVertical,
-  CheckCircle, AlertTriangle, Package,
-  ArrowRight, DollarSign, Utensils,
-  History, Settings, PieChart as PieIcon,
-  ChefHat, Tag, Info, Layers,
-  TrendingUp, TrendingDown, ClipboardList
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Package, Plus, Minus, Search, AlertTriangle,
+  ShoppingCart, TrendingDown, Archive, RefreshCw, X
 } from 'lucide-react';
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid
-} from 'recharts';
-import { motion } from 'framer-motion';
 
-const inventoryItems = [
-  { id: 1, name: 'Dana Antrikot', unit: 'kg', stock: 45, critical: 50, price: '₺ 680', status: 'critical', method: 'FIFO' },
-  { id: 2, name: 'Domates (Salkım)', unit: 'kg', stock: 120, critical: 80, price: '₺ 35', status: 'normal', method: 'FIFO' },
-  { id: 3, name: 'Zeytinyağı (Sızma)', unit: 'Lt', stock: 15, critical: 20, price: '₺ 420', status: 'critical', method: 'LIFO' },
-  { id: 4, name: 'Coca-Cola 330ml', unit: 'Case', stock: 85, critical: 30, price: '₺ 540', status: 'normal', method: 'FIFO' },
-  { id: 5, name: 'Efes Malt 50cl', unit: 'Case', stock: 12, critical: 25, price: '₺ 820', status: 'critical', method: 'FIFO' },
-  { id: 6, name: 'Temizlik Kiti A1', unit: 'Set', stock: 240, critical: 100, price: '₺ 125', status: 'normal', method: 'FIFO' },
-];
-
-const dailyCostData = [
-  { day: 'Pzt', cost: 12400 },
-  { day: 'Sal', cost: 15600 },
-  { day: 'Çar', cost: 11200 },
-  { day: 'Per', cost: 18900 },
-  { day: 'Cum', cost: 22400 },
-  { day: 'Cmt', cost: 28600 },
-  { day: 'Paz', cost: 14200 },
-];
-
-const pieData = [
-  { name: 'Mutfak (F&B)', value: 55, color: '#ef4444' },
-  { name: 'İçecek (Bev)', value: 25, color: '#3b82f6' },
-  { name: 'Genel Gider', value: 20, color: '#f59e0b' },
+const INITIAL_STOCK = [
+  { id:'S-001', name:'Şampuan (200ml)',     cat:'Banyo',       unit:'Adet', stock:120, minStock:30, cost:8  },
+  { id:'S-002', name:'Sabun (100g)',        cat:'Banyo',       unit:'Adet', stock:85,  minStock:30, cost:5  },
+  { id:'S-003', name:'Havlu (Küçük)',       cat:'Çamaşır',     unit:'Adet', stock:45,  minStock:20, cost:35 },
+  { id:'S-004', name:'Havlu (Büyük)',       cat:'Çamaşır',     unit:'Adet', stock:38,  minStock:20, cost:65 },
+  { id:'S-005', name:'Yatak Çarşafı',      cat:'Çamaşır',     unit:'Adet', stock:60,  minStock:25, cost:55 },
+  { id:'S-006', name:'Yastık Kılıfı',      cat:'Çamaşır',     unit:'Adet', stock:72,  minStock:30, cost:18 },
+  { id:'S-007', name:'Su (500ml)',          cat:'Minibar',     unit:'Şişe', stock:200, minStock:50, cost:3  },
+  { id:'S-008', name:'Kola (330ml)',        cat:'Minibar',     unit:'Şişe', stock:96,  minStock:30, cost:8  },
+  { id:'S-009', name:'Çikolata Bar',       cat:'Minibar',     unit:'Adet', stock:48,  minStock:20, cost:12 },
+  { id:'S-010', name:'Kahve Kapsülü',      cat:'Oda',         unit:'Adet', stock:180, minStock:60, cost:6  },
+  { id:'S-011', name:'Çay Poşeti',         cat:'Oda',         unit:'Adet', stock:250, minStock:80, cost:2  },
+  { id:'S-012', name:'Tuvalet Kağıdı',     cat:'Banyo',       unit:'Rulo', stock:15,  minStock:40, cost:4  },
+  { id:'S-013', name:'Deterjan (Genel)',   cat:'Temizlik',    unit:'Lt',   stock:22,  minStock:10, cost:45 },
+  { id:'S-014', name:'El Dezenfektanı',    cat:'Temizlik',    unit:'Lt',   stock:8,   minStock:10, cost:60 },
 ];
 
 const Inventory = () => {
-  const [activeDepot, setActiveDepot] = useState('main');
+  const { addNotification } = useHotel();
+  const [items, setItems]       = useState(INITIAL_STOCK);
+  const [search, setSearch]     = useState('');
+  const [catFilter, setCat]     = useState('Tümü');
+  const [adjustModal, setAdjustModal] = useState(null);
+  const [adjustQty, setAdjustQty]     = useState(0);
+  const [adjustType, setAdjustType]   = useState('add');
+
+  const cats = ['Tümü', ...new Set(INITIAL_STOCK.map(i=>i.cat))];
+
+  const filtered = items.filter(i => {
+    const q = search.toLowerCase();
+    return (catFilter==='Tümü'||i.cat===catFilter) && (!q||i.name.toLowerCase().includes(q));
+  });
+
+  const lowStock = items.filter(i=>i.stock < i.minStock);
+
+  const handleAdjust = () => {
+    const qty = Number(adjustQty);
+    setItems(prev=>prev.map(i=>i.id===adjustModal.id ? {...i, stock: Math.max(0, adjustType==='add'?i.stock+qty:i.stock-qty)} : i));
+    addNotification({ type:'info', msg:`Stok güncellendi: ${adjustModal.name} (${adjustType==='add'?'+':'-'}${qty})` });
+    setAdjustModal(null);
+  };
+
+  const quickOrder = (item) => {
+    setItems(prev=>prev.map(i=>i.id===item.id ? {...i, stock:i.stock+50} : i));
+    addNotification({ type:'success', msg:`Satın alma emri verildi: ${item.name} (+50 adet)` });
+  };
 
   return (
-    <div className="inv-container">
-      <header className="header">
-         <div className="title-section">
-            <Box size={32} className="icon-blue"/>
-            <div>
-               <h2>Ambar, Stok & Maliyet Kontrol (Cost Control)</h2>
-               <span>Dinamik reçetelendirme, FIFO/LIFO takibi ve zayi yönetimi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline"><ClipboardList size={18}/> SAYIM TUTANAĞI</button>
-            <button className="btn primary orange"><ShoppingCart size={18}/> SATIN ALMA TALEBİ AÇ</button>
-         </div>
-      </header>
-
-      <div className="inv-grid">
-         {/* Left Side: Depot Selection & Metrics */}
-         <aside className="left-panel">
-            <section className="card depot-card">
-               <h3>AMBARLAR / REYONLAR</h3>
-               <div className="d-list mt-15">
-                  <div className={`d-item ${activeDepot === 'main' ? 'active' : ''}`} onClick={() => setActiveDepot('main')}>
-                     <Package size={18}/> <div><strong>Ana Depo</strong><span>842 Kalem</span></div>
-                  </div>
-                  <div className={`d-item ${activeDepot === 'fnb' ? 'active' : ''}`} onClick={() => setActiveDepot('fnb')}>
-                     <Utensils size={18}/> <div><strong>Mutfak Ambarı</strong><span>215 Kalem</span></div>
-                  </div>
-                  <div className={`d-item ${activeDepot === 'hk' ? 'active' : ''}`} onClick={() => setActiveDepot('hk')}>
-                     <Layers size={18}/> <div><strong>HK Deposu</strong><span>112 Kalem</span></div>
-                  </div>
-               </div>
-            </section>
-
-            <section className="card stats-card mt-20">
-               <h3>MALİYET DAĞILIMI</h3>
-               <div className="donut-box">
-                  <ResponsiveContainer width="100%" height={160}>
-                     <PieChart>
-                        <Pie data={pieData} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
-                           {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip />
-                     </PieChart>
-                  </ResponsiveContainer>
-                  <div className="d-center"><strong>₺ 242K</strong><span>STOK BEDELİ</span></div>
-               </div>
-               <div className="leg-list mt-15">
-                  {pieData.map((item, i) => (
-                    <div key={i} className="leg-item">
-                       <div className="dot" style={{ background: item.color }}></div>
-                       <span>{item.name}</span>
-                       <strong>{item.value}%</strong>
-                    </div>
-                  ))}
-               </div>
-            </section>
-         </aside>
-
-         {/* Center: Inventory List & Movements */}
-         <section className="main-content">
-            <div className="card list-card">
-               <div className="l-header">
-                  <div className="sh-title">
-                     <TrendingUp size={20} className="green"/>
-                     <h3>KRİTİK STOK VE HAREKETLER</h3>
-                  </div>
-                  <div className="search-box">
-                     <Search size={16}/>
-                     <input type="text" placeholder="Ürün adı, barkod veya kategori..." />
-                  </div>
-               </div>
-               <table className="inv-table">
-                  <thead>
-                     <tr>
-                        <th>Ürün / Yöntem</th>
-                        <th>Birim</th>
-                        <th>Stok</th>
-                        <th>Kritik</th>
-                        <th>Birim Maliyet</th>
-                        <th>Durum</th>
-                        <th>İşlem</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {inventoryItems.map((item, i) => (
-                       <tr key={i}>
-                          <td>
-                             <div className="name-cell">
-                                <strong>{item.name}</strong>
-                                <span className="method">{item.method}</span>
-                             </div>
-                          </td>
-                          <td>{item.unit}</td>
-                          <td><strong className={item.status === 'critical' ? 'red' : 'blue'}>{item.stock}</strong></td>
-                          <td>{item.critical}</td>
-                          <td>{item.price}</td>
-                          <td>
-                             <span className={`status-pill ${item.status}`}>
-                                {item.status === 'critical' ? 'Kritik Seviye' : 'Normal'}
-                             </span>
-                          </td>
-                          <td><button className="icon-btn"><MoreVertical size={16}/></button></td>
-                       </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-
-            <div className="cost-analysis-row mt-20">
-               <div className="card cost-chart">
-                  <h3>GÜNLÜK TÜKETİM MALİYETİ (DAILY FOOD COST)</h3>
-                  <div style={{ height: 180, marginTop: 20 }}>
-                     <ResponsiveContainer width="100%" height="100%">
-                        <ReBarChart data={dailyCostData}>
-                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                           <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                           <YAxis axisLine={false} tickLine={false} hide />
-                           <Tooltip cursor={{fill: '#f8fafc'}} />
-                           <Bar dataKey="cost" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        </ReBarChart>
-                     </ResponsiveContainer>
-                  </div>
-               </div>
-            </div>
-         </section>
-
-         {/* Right Sidebar: Recipes & Approvals */}
-         <aside className="right-panel">
-            <section className="card recipe-card">
-               <div className="rh">
-                  <ChefHat size={18} className="orange"/>
-                  <h3>REÇETE ANALİZİ</h3>
-               </div>
-               <div className="recipe-hero mt-15">
-                  <img src="https://images.unsplash.com/photo-1574071318508-1cdbad80ad38?auto=format&fit=crop&q=80&w=300" alt="Pizza" />
-                  <div className="overlay">
-                     <strong>Margherita Pizza</strong>
-                     <span>Reçete Maliyeti: <strong>₺ 84.50</strong></span>
-                  </div>
-               </div>
-               <div className="recipe-stats mt-20">
-                  <div className="rs-line"><span>Maliyet Oranı</span><strong className="red">% 28.4</strong></div>
-                  <div className="rs-line mt-10"><span>Satış Fiyatı</span><strong>₺ 340.00</strong></div>
-               </div>
-               <button className="btn-full outline mt-15">REÇETE DETAYINI AÇ</button>
-            </section>
-
-            <section className="card task-card mt-20">
-               <h3>MALİYET UYARILARI</h3>
-               <div className="task-feed">
-                  <div className="task-item warn">
-                    <AlertTriangle size={14}/>
-                    <div>
-                       <strong>Fiyat Artışı Saptandı</strong>
-                       <p>Domates birim fiyatı %15 arttı.</p>
-                    </div>
-                  </div>
-                  <div className="task-item info">
-                    <CheckCircle size={14}/>
-                    <div>
-                       <strong>Sayım Onaylandı</strong>
-                       <p>Bar ambar sayımı Şef tarafından onaylandı.</p>
-                    </div>
-                  </div>
-               </div>
-            </section>
-         </aside>
+    <div className="inv-page">
+      <div className="inv-head">
+        <div><h2>Stok & Envanter Yönetimi</h2><span>Oda malzemeleri, minibar, çamaşırhane ve temizlik stok takibi</span></div>
       </div>
 
+      {/* Alerts */}
+      {lowStock.length>0 && (
+        <div className="low-alert">
+          <AlertTriangle size={18} color="#b45309"/>
+          <span><strong>{lowStock.length} ürün</strong> minimum stok seviyesinin altında: {lowStock.map(i=>i.name).join(', ')}</span>
+        </div>
+      )}
+
+      {/* KPI */}
+      <div className="inv-kpi">
+        <div className="ik"><TrendingDown size={20} color="#ef4444"/><div><strong>{lowStock.length}</strong><span>Kritik Stok</span></div></div>
+        <div className="ik"><Package size={20} color="#3b82f6"/><div><strong>{items.length}</strong><span>Ürün Çeşidi</span></div></div>
+        <div className="ik"><Archive size={20} color="#10b981"/><div><strong>{items.reduce((s,i)=>s+i.stock,0)}</strong><span>Toplam Stok</span></div></div>
+        <div className="ik"><ShoppingCart size={20} color="#f59e0b"/><div><strong>₺{items.reduce((s,i)=>s+i.stock*i.cost,0).toLocaleString()}</strong><span>Stok Değeri</span></div></div>
+      </div>
+
+      {/* Filters */}
+      <div className="inv-filters">
+        <div className="search-box"><Search size={14}/><input placeholder="Ürün ara..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div className="cat-pills">
+          {cats.map(c=><button key={c} className={`cpill ${catFilter===c?'active':''}`} onClick={()=>setCat(c)}>{c}</button>)}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="inv-table-wrap">
+        <table className="inv-table">
+          <thead><tr><th>Ürün Adı</th><th>Kategori</th><th>Birim</th><th>Stok</th><th>Min. Stok</th><th>Birim Maliyet</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <tbody>
+            {filtered.map((item,i)=>{
+              const low = item.stock < item.minStock;
+              const critical = item.stock < item.minStock * 0.5;
+              return (
+                <motion.tr key={item.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.03}}>
+                  <td><strong>{item.name}</strong></td>
+                  <td><span className="cat-badge">{item.cat}</span></td>
+                  <td>{item.unit}</td>
+                  <td>
+                    <div className="stock-cell">
+                      <span className={`stock-num ${critical?'critical':low?'low':''}`}>{item.stock}</span>
+                      <div className="stock-bar-wrap">
+                        <div className="stock-bar" style={{width:`${Math.min(100,(item.stock/Math.max(item.minStock*2,1))*100)}%`, background:critical?'#ef4444':low?'#f59e0b':'#10b981'}}/>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{item.minStock}</td>
+                  <td>₺{item.cost}</td>
+                  <td>{critical?<span className="tag red">Kritik</span>:low?<span className="tag orange">Düşük</span>:<span className="tag green">Normal</span>}</td>
+                  <td>
+                    <div className="act-btns">
+                      <button className="act-btn blue" onClick={()=>{setAdjustModal(item);setAdjustQty(10);setAdjustType('add');}}>Giriş/Çıkış</button>
+                      {low && <button className="act-btn orange" onClick={()=>quickOrder(item)}>Sipariş Ver</button>}
+                    </div>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Adjust Modal */}
+      <AnimatePresence>
+        {adjustModal && (
+          <motion.div className="modal-overlay" onClick={()=>setAdjustModal(null)} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+            <motion.div className="adj-modal" onClick={e=>e.stopPropagation()} initial={{scale:.9}} animate={{scale:1}}>
+              <div className="modal-head"><h3>Stok Hareketi — {adjustModal.name}</h3><button onClick={()=>setAdjustModal(null)}><X size={18}/></button></div>
+              <div className="adj-body">
+                <div className="cur-stock">Mevcut Stok: <strong>{adjustModal.stock} {adjustModal.unit}</strong></div>
+                <div className="type-toggle">
+                  <button className={adjustType==='add'?'active add':''} onClick={()=>setAdjustType('add')}><Plus size={15}/> Giriş (Stok Artır)</button>
+                  <button className={adjustType==='sub'?'active sub':''} onClick={()=>setAdjustType('sub')}><Minus size={15}/> Çıkış (Stok Azalt)</button>
+                </div>
+                <label>Miktar ({adjustModal.unit})</label>
+                <input type="number" value={adjustQty} onChange={e=>setAdjustQty(e.target.value)} min={1}/>
+                <div className="new-stock">
+                  Yeni Stok: <strong style={{color:adjustType==='add'?'#10b981':'#ef4444'}}>
+                    {Math.max(0, adjustType==='add' ? adjustModal.stock+Number(adjustQty) : adjustModal.stock-Number(adjustQty))} {adjustModal.unit}
+                  </strong>
+                </div>
+              </div>
+              <div className="modal-foot">
+                <button className="btn-cancel" onClick={()=>setAdjustModal(null)}>İptal</button>
+                <button className="btn-save" onClick={handleAdjust}>Kaydet</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
-        .inv-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-        .btn.primary.orange { background: #f59e0b; color: white; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .inv-grid { display: grid; grid-template-columns: 280px 1fr 320px; gap: 30px; }
-
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; letter-spacing: 1px; }
-
-        .d-list { display: flex; flex-direction: column; gap: 8px; }
-        .d-item { display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 12px; cursor: pointer; color: #64748b; transition: 0.2s; }
-        .d-item.active { background: #3b82f6; color: white; }
-        .d-item strong { display: block; font-size: 14px; }
-        .d-item span { font-size: 10px; font-weight: 700; opacity: 0.8; }
-
-        .donut-box { position: relative; display: flex; justify-content: center; align-items: center; margin-top: 20px; }
-        .d-center { position: absolute; text-align: center; }
-        .d-center strong { display: block; font-size: 18px; color: #1e293b; }
-        .d-center span { font-size: 8px; font-weight: 900; color: #94a3b8; }
-
-        .leg-list { display: flex; flex-direction: column; gap: 8px; }
-        .leg-item { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 700; color: #64748b; }
-        .leg-item strong { margin-left: auto; color: #1e293b; }
-        .dot { width: 8px; height: 8px; border-radius: 2px; }
-
-        .l-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .sh-title { display: flex; align-items: center; gap: 10px; }
-        .search-box { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px; }
-        .search-box input { border: none; background: transparent; outline: none; font-size: 13px; width: 200px; }
-
-        .inv-table { width: 100%; border-collapse: collapse; }
-        .inv-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; }
-        .inv-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid #f8fafc; color: #475569; }
-        .name-cell .method { font-size: 9px; font-weight: 900; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 8px; color: #64748b; }
-        
-        .status-pill { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
-        .status-pill.critical { background: #fee2e2; color: #dc2626; }
-        .status-pill.normal { background: #ecfdf5; color: #10b981; }
-
-        .recipe-hero { position: relative; border-radius: 16px; overflow: hidden; height: 140px; }
-        .recipe-hero img { width: 100%; height: 100%; object-fit: cover; }
-        .recipe-hero .overlay { position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 20px; color: white; display: flex; flex-direction: column; justify-content: flex-end; }
-        .recipe-hero .overlay strong { font-size: 16px; }
-        .recipe-hero .overlay span { font-size: 11px; opacity: 0.9; }
-
-        .rs-line { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #64748b; }
-        .rs-line strong { color: #1e293b; }
-
-        .task-feed { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .task-item { display: flex; gap: 12px; padding: 12px; border-radius: 12px; font-size: 12px; }
-        .task-item.warn { background: #fffbeb; color: #92400e; }
-        .task-item.info { background: #f0fdf4; color: #15803d; }
-        .task-item strong { display: block; margin-bottom: 2px; }
-        .task-item p { font-size: 11px; opacity: 0.8; }
-
-        .btn-full { width: 100%; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 12px; }
-        .btn-full.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        .blue { color: #3b82f6; }
-        .red { color: #ef4444; }
-        .green { color: #10b981; }
-        .orange { color: #f59e0b; }
-        .mt-20 { margin-top: 20px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
+        .inv-page{padding:28px;display:flex;flex-direction:column;gap:18px;}
+        .inv-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .inv-head h2{font-size:22px;font-weight:800;color:#1e293b;}
+        .inv-head span{font-size:13px;color:#94a3b8;}
+        .low-alert{display:flex;align-items:center;gap:10px;background:#fffbeb;color:#b45309;padding:12px 18px;border-radius:12px;border:1px solid #fde68a;font-size:13px;}
+        .inv-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+        .ik{background:white;border-radius:16px;border:1px solid #e2e8f0;padding:18px;display:flex;align-items:center;gap:14px;}
+        .ik strong{display:block;font-size:22px;font-weight:900;color:#1e293b;}
+        .ik span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .inv-filters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+        .search-box{display:flex;align-items:center;gap:8px;background:white;border:1.5px solid #e2e8f0;padding:9px 14px;border-radius:10px;min-width:280px;}
+        .search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%;}
+        .cat-pills{display:flex;gap:8px;flex-wrap:wrap;}
+        .cpill{padding:7px 14px;border-radius:20px;border:1.5px solid #e2e8f0;background:white;font-size:12px;font-weight:700;color:#64748b;cursor:pointer;}
+        .cpill.active{background:#1e293b;color:white;border-color:#1e293b;}
+        .inv-table-wrap{background:white;border-radius:20px;border:1px solid #e2e8f0;overflow:hidden;}
+        .inv-table{width:100%;border-collapse:collapse;}
+        .inv-table thead{background:#f8fafc;}
+        .inv-table th{text-align:left;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:800;}
+        .inv-table td{padding:14px 16px;font-size:13px;color:#475569;border-bottom:1px solid #f8fafc;vertical-align:middle;}
+        .inv-table tr:last-child td{border-bottom:none;}
+        .cat-badge{background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+        .stock-cell{display:flex;flex-direction:column;gap:4px;}
+        .stock-num{font-size:16px;font-weight:900;color:#1e293b;}
+        .stock-num.low{color:#f59e0b;}
+        .stock-num.critical{color:#ef4444;}
+        .stock-bar-wrap{width:80px;height:5px;background:#f1f5f9;border-radius:10px;overflow:hidden;}
+        .stock-bar{height:100%;border-radius:10px;transition:width 0.5s;}
+        .tag{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;}
+        .tag.green{background:#f0fdf4;color:#10b981;}
+        .tag.orange{background:#fffbeb;color:#f59e0b;}
+        .tag.red{background:#fef2f2;color:#ef4444;}
+        .act-btns{display:flex;gap:8px;}
+        .act-btn{padding:6px 14px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer;}
+        .act-btn.blue{background:#eff6ff;color:#3b82f6;}
+        .act-btn.orange{background:#fffbeb;color:#f59e0b;}
+        .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .adj-modal{background:white;border-radius:22px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.4);width:400px;}
+        .modal-head{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;}
+        .modal-head h3{font-size:16px;font-weight:800;color:#1e293b;}
+        .modal-head button{background:transparent;border:none;color:#94a3b8;cursor:pointer;}
+        .adj-body{padding:22px 24px;display:flex;flex-direction:column;gap:14px;}
+        .cur-stock{font-size:14px;color:#64748b;background:#f8fafc;padding:12px 16px;border-radius:10px;}
+        .cur-stock strong{color:#1e293b;}
+        .type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .type-toggle button{padding:12px;border-radius:12px;border:1.5px solid #e2e8f0;background:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:#64748b;}
+        .type-toggle .active.add{background:#ecfdf5;color:#10b981;border-color:#10b981;}
+        .type-toggle .active.sub{background:#fef2f2;color:#ef4444;border-color:#ef4444;}
+        .adj-body label{font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;}
+        .adj-body input{padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:16px;font-weight:700;outline:none;}
+        .new-stock{font-size:13px;color:#64748b;background:#f8fafc;padding:12px 16px;border-radius:10px;}
+        .modal-foot{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;}
+        .btn-cancel{padding:11px 20px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
+        .btn-save{padding:11px 22px;border-radius:10px;border:none;background:#3b82f6;color:white;font-weight:800;cursor:pointer;}
       `}</style>
     </div>
   );

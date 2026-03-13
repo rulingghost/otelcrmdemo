@@ -1,225 +1,148 @@
 import React, { useState } from 'react';
-import { 
-  ShoppingCart, Search, Plus, 
-  FileText, Truck, ShieldCheck,
-  ChevronDown, Filter, MoreVertical,
-  CheckCircle, AlertTriangle, ArrowRight,
-  Package, DollarSign, List as ListIcon,
-  User, Send, RefreshCw, Layers
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingBag, Plus, Search, X, CheckCircle, Package, Truck } from 'lucide-react';
 
-const deptRequests = [
-  { dept: 'Mutfak', user: 'Asli B.', date: '24.04', items: '6 ürün', status: 'beklemede', avatar: 'AB' },
-  { dept: 'HK', user: 'Melek D.', date: '23.04', items: '4 ürün', status: 'onaylandı', avatar: 'MD' },
-  { dept: 'Teknik Servis', user: 'Volkan T.', date: '22.04', items: '9 ürün', status: 'beklemede', avatar: 'VT' },
+const SUPPLIERS = ['Temizlik A.Ş.', 'Gıda Ltd.', 'Tekstil San.', 'Teknoloji A.Ş.', 'Ofis Malz. Ltd.'];
+const CATS = ['Gıda & İçecek', 'Temizlik', 'Tekstil', 'Teknoloji', 'Ofis', 'Bakım & Onarım'];
+
+const INITIAL = [
+  { id:'PO-001', item:'Havlu (100 adet)', supplier:'Tekstil San.',  cat:'Tekstil',    amount:6500,  status:'teslim',  date:'2026-03-10' },
+  { id:'PO-002', item:'Temizlik Seti',     supplier:'Temizlik A.Ş.',cat:'Temizlik', amount:2800,  status:'yolda',   date:'2026-03-13' },
+  { id:'PO-003', item:'Minibar Malzemeleri',supplier:'Gıda Ltd.',   cat:'Gıda & İçecek', amount:4200, status:'bekliyor',date:'2026-03-14' },
+  { id:'PO-004', item:'Laptop (2 adet)',   supplier:'Teknoloji A.Ş.',cat:'Teknoloji', amount:38000, status:'onay',    date:'2026-03-14' },
 ];
 
-const quotes = [
-  { item: 'Et', a: '40.50/kg', b: '37.90/kg', c: '38.90/kg', totalA: '₺ 10,100', totalB: '₺ 9,800', totalC: '₺ 9,350' },
-  { item: 'Süt', a: '10.75/l', b: '37.90/l', c: '10.20/l', totalA: '', totalB: '', totalC: '' },
-  { item: 'Temizlik Malz.', a: '52.00/adet', b: '49.50/adet', c: '47.50/adet', totalA: '', totalB: '', totalC: '' },
-];
+const STATUS_STYLE = {
+  bekliyor: { label:'Sipariş Verildi', color:'#f59e0b', bg:'#fffbeb' },
+  onay:     { label:'Onay Bekliyor',  color:'#3b82f6', bg:'#eff6ff' },
+  yolda:    { label:'Yolda',          color:'#8b5cf6', bg:'#f5f3ff' },
+  teslim:   { label:'Teslim Edildi',  color:'#10b981', bg:'#f0fdf4' },
+  iptal:    { label:'İptal',          color:'#ef4444', bg:'#fef2f2' },
+};
 
 const Procurement = () => {
+  const { addNotification } = useHotel();
+  const [orders, setOrders] = useState(INITIAL);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ item:'', supplier: SUPPLIERS[0], cat: CATS[0], amount:'', date:'2026-03-14' });
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const submit = (e) => {
+    e.preventDefault();
+    const id = `PO-${String(orders.length+1).padStart(3,'0')}`;
+    setOrders(p=>[{...form, id, status:'bekliyor', amount:Number(form.amount)}, ...p]);
+    addNotification({ type:'info', msg:`Satın alma emri oluşturuldu: ${form.item}` });
+    setForm({ item:'', supplier:SUPPLIERS[0], cat:CATS[0], amount:'', date:'2026-03-14' });
+    setShowForm(false);
+  };
+
+  const updateStatus = (id, status) => {
+    setOrders(p=>p.map(o=>o.id===id?{...o,status}:o));
+    addNotification({ type:'success', msg:`Sipariş durumu güncellendi: ${id}` });
+  };
+
+  const total = orders.reduce((s,o)=>s+o.amount,0);
+  const delivered = orders.filter(o=>o.status==='teslim').length;
+
   return (
-    <div className="proc-container">
-      <header className="header">
-         <div className="title-section">
-            <ShoppingCart size={32} className="icon-blue"/>
-            <div>
-               <h2>Procurement & Purchasing</h2>
-               <span>Satın alma talepleri, teklif karşılaştırma ve onay süreçleri</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">YENİ TALEP OLUŞTUR</button>
-            <button className="btn outline">TEDARİKÇİ PUANLAMA</button>
-            <button className="btn primary red"><AlertTriangle size={18}/> ACİL SİPARİŞ</button>
-         </div>
-      </header>
+    <div className="proc-page">
+      <div className="proc-head">
+        <div><h2><ShoppingBag size={20}/> Satın Alma (Procurement)</h2><span>Sipariş, tedarikçi ve teslimat yönetimi</span></div>
+        <button className="btn-primary" onClick={()=>setShowForm(!showForm)}><Plus size={15}/> Yeni Sipariş</button>
+      </div>
 
-      <div className="proc-grid">
-         {/* Left: Department Requests */}
-         <aside className="left-panel">
-            <section className="card requests-card">
-               <h3>DEPARTMAN TALEPLERİ</h3>
-               <div className="req-list mt-20">
-                  {deptRequests.map((r, i) => (
-                    <div key={i} className="req-item">
-                       <div className="req-header">
-                          <div className="avatar-small">{r.avatar}</div>
-                          <div className="req-info">
-                             <strong>{r.dept}</strong>
-                             <span>{r.user} • {r.date}</span>
-                          </div>
-                          <button className="btn-s blue">İZLE</button>
-                       </div>
-                       <div className="req-meta mt-10">
-                          <span>{r.items}</span>
-                          <span className={`status ${r.status}`}>{r.status.toUpperCase()}</span>
-                       </div>
+      <div className="proc-kpi">
+        {[
+          { label:'Toplam Sipariş', val:orders.length, color:'#3b82f6' },
+          { label:'Bekleyen', val:orders.filter(o=>o.status!=='teslim'&&o.status!=='iptal').length, color:'#f59e0b' },
+          { label:'Teslim Edildi', val:delivered, color:'#10b981' },
+          { label:'Toplam Tutar', val:`₺${total.toLocaleString()}`, color:'#8b5cf6' },
+        ].map((k,i)=>(
+          <div key={i} className="pk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.form className="form-card" onSubmit={submit} initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
+            <h3>Yeni Satın Alma Emri</h3>
+            <div className="fg-grid">
+              <div className="fg full"><label>Ürün / Hizmet Adı *</label><input value={form.item} onChange={e=>set('item',e.target.value)} placeholder="Ürün adı" required/></div>
+              <div className="fg"><label>Tedarikçi</label><select value={form.supplier} onChange={e=>set('supplier',e.target.value)}>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></div>
+              <div className="fg"><label>Kategori</label><select value={form.cat} onChange={e=>set('cat',e.target.value)}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+              <div className="fg"><label>Tutar (₺)</label><input type="number" value={form.amount} onChange={e=>set('amount',e.target.value)} placeholder="0" required/></div>
+              <div className="fg"><label>Tarih</label><input type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+            </div>
+            <div className="form-foot"><button type="button" className="btn-cancel" onClick={()=>setShowForm(false)}>İptal</button><button type="submit" className="btn-primary">Sipariş Oluştur</button></div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      <div className="proc-table-wrap">
+        <table className="proc-table">
+          <thead><tr><th>Sipariş No</th><th>Ürün</th><th>Tedarikçi</th><th>Kategori</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <tbody>
+            {orders.map((o,i)=>{
+              const st = STATUS_STYLE[o.status];
+              return (
+                <motion.tr key={o.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.04}}>
+                  <td><span className="oid">{o.id}</span></td>
+                  <td><strong>{o.item}</strong><div className="date-sub">{o.date}</div></td>
+                  <td>{o.supplier}</td>
+                  <td><span className="cat-tag">{o.cat}</span></td>
+                  <td><strong>₺{o.amount.toLocaleString()}</strong></td>
+                  <td><span className="status-tag" style={{background:st.bg,color:st.color}}>{st.label}</span></td>
+                  <td>
+                    <div className="act-btns">
+                      {o.status==='bekliyor' && <button className="mb blue" onClick={()=>updateStatus(o.id,'onay')}>Onayla</button>}
+                      {o.status==='onay'     && <button className="mb purple" onClick={()=>updateStatus(o.id,'yolda')}>Yolda İşaretle</button>}
+                      {o.status==='yolda'    && <button className="mb green" onClick={()=>updateStatus(o.id,'teslim')}><Truck size={12}/> Teslim Alındı</button>}
+                      {o.status!=='teslim'&&o.status!=='iptal' && <button className="mb red" onClick={()=>updateStatus(o.id,'iptal')}>İptal</button>}
                     </div>
-                  ))}
-               </div>
-
-               <div className="pending-stats mt-30">
-                  <h3>BEKLEYEN TALEPLER</h3>
-                  <div className="ps-item mt-15">
-                     <span>Mutfak</span>
-                     <strong>6 ürün - 2 tutar</strong>
-                  </div>
-                  <div className="ps-item mt-10">
-                     <span>Teknik Servis</span>
-                     <strong>9 ürün - 2 tutar</strong>
-                  </div>
-               </div>
-            </section>
-         </aside>
-
-         {/* Center: Quote Comparison */}
-         <section className="main-content">
-            <div className="card comparison-card">
-               <div className="comp-head">
-                  <h3>TEKLİF KARŞILAŞTIRMA</h3>
-                  <div className="comp-tabs">
-                     <span>Tedarikçiler</span>
-                  </div>
-               </div>
-               <table className="proc-table">
-                  <thead>
-                     <tr>
-                        <th>Ürünler</th>
-                        <th>Tedarikçi A</th>
-                        <th>Tedarikçi B</th>
-                        <th>Tedarikçi C</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {quotes.map((q, i) => (
-                       <tr key={i}>
-                          <td><strong>{q.item}</strong></td>
-                          <td>{q.a}</td>
-                          <td className="best-price">{q.b}</td>
-                          <td>{q.c}</td>
-                       </tr>
-                     ))}
-                     <tr className="total-row">
-                        <td><strong>Total</strong></td>
-                        <td><strong>{quotes[0].totalA}</strong></td>
-                        <td><strong>{quotes[0].totalB}</strong></td>
-                        <td className="winner"><strong>{quotes[0].totalC}</strong></td>
-                     </tr>
-                  </tbody>
-               </table>
-               <button className="link-btn mt-20">Detayları Göster... <ChevronDown size={14}/></button>
-            </div>
-
-            <div className="summary-bar mt-20">
-               <div className="sb-item">AÇIK SİPARİŞLER: <strong>14</strong></div>
-               <div className="sb-item">ONAY BEKLEYEN: <strong>5</strong></div>
-               <div className="sb-item">TOPLAM ALIM (AYLIK): <strong>₺ 2.4M</strong></div>
-            </div>
-         </section>
-
-         {/* Right: Approval Centers */}
-         <aside className="right-panel">
-            <section className="card approval-card">
-               <h3>GENEL MÜDÜR ONAYI</h3>
-               <div className="app-list mt-20">
-                  {['Mutfak', 'Melek D.', 'Sait U.', 'Ismail B.'].map((name, i) => (
-                    <div key={i} className="app-item">
-                       <User size={16} className="gray"/>
-                       <div className="app-info">
-                          <strong>{name}</strong>
-                          <small>Sipariş No: 423{i}</small>
-                       </div>
-                       <span className="time-tag">+{i+2}:45</span>
-                    </div>
-                  ))}
-               </div>
-            </section>
-
-            <section className="card approval-card mt-20">
-               <h3>ONAY MERKEZİ</h3>
-               <div className="om-list mt-15">
-                  <div className="om-item">
-                     <span>Finans Onayı</span>
-                     <strong>₺ 5,200</strong>
-                  </div>
-                  <div className="om-item mt-10">
-                     <span>Satın Alma</span>
-                     <strong>₺ 3,200</strong>
-                  </div>
-               </div>
-               <button className="btn-full mt-20">Tümünü Gör...</button>
-            </section>
-         </aside>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <style>{`
-        .proc-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #1e293b; }
-        .btn.primary.red { background: #ef4444; color: white; display: flex; align-items: center; gap: 8px; }
-
-        .proc-grid { display: grid; grid-template-columns: 260px 1fr 280px; gap: 30px; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; margin-bottom: 25px; letter-spacing: 0.5px; }
-
-        .req-item { padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 12px; }
-        .req-header { display: flex; align-items: center; gap: 10px; }
-        .avatar-small { width: 32px; height: 32px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
-        .req-info { flex: 1; display: flex; flex-direction: column; }
-        .req-info strong { font-size: 12px; color: #1e293b; }
-        .req-info span { font-size: 10px; color: #94a3b8; }
-        .btn-s { padding: 2px 8px; border-radius: 4px; border: none; font-size: 10px; font-weight: 900; cursor: pointer; }
-        .btn-s.blue { background: #eff6ff; color: #3b82f6; }
-        .req-meta { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: #64748b; }
-        .status.onaylandı { color: #10b981; }
-
-        .proc-table { width: 100%; border-collapse: collapse; }
-        .proc-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
-        .proc-table td { padding: 15px 12px; font-size: 12px; border-bottom: 1px solid #f8fafc; color: #475569; }
-        .total-row { background: #f8fafc; }
-        .best-price { background: #ecfdf5; color: #10b981; font-weight: 700; }
-        .winner { background: #eff6ff; color: #3b82f6; font-weight: 900; }
-
-        .summary-bar { display: flex; gap: 30px; font-size: 11px; font-weight: 800; color: #94a3b8; padding: 0 10px; }
-        .summary-bar strong { color: #1e293b; margin-left: 5px; }
-
-        .app-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-        .app-info { flex: 1; display: flex; flex-direction: column; }
-        .app-info strong { font-size: 12px; color: #1e293b; }
-        .app-info small { font-size: 10px; color: #94a3b8; }
-        .time-tag { font-size: 10px; background: #ecfdf5; color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
-
-        .om-item { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #64748b; }
-        .om-item strong { color: #1e293b; }
-
-        .btn-full { width: 100%; padding: 12px; background: #f1f5f9; color: #64748b; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid #e2e8f0; }
-
-        .link-btn { border: none; background: transparent; color: #3b82f6; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .gray { color: #94a3b8; }
-        .mt-20 { margin-top: 20px; }
-        .mt-30 { margin-top: 30px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
+        .proc-page{padding:28px;display:flex;flex-direction:column;gap:18px;}
+        .proc-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .proc-head h2{font-size:22px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:10px;}
+        .proc-head span{font-size:13px;color:#94a3b8;}
+        .btn-primary{padding:10px 18px;border-radius:12px;border:none;background:#3b82f6;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+        .proc-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+        .pk{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:18px;text-align:center;}
+        .pk strong{display:block;font-size:26px;font-weight:900;margin-bottom:4px;}
+        .pk span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .form-card{background:white;border-radius:16px;border:1px solid #e2e8f0;padding:22px;}
+        .form-card h3{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:16px;}
+        .fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .fg{display:flex;flex-direction:column;gap:6px;}
+        .fg.full{grid-column:1/-1;}
+        .fg label{font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;}
+        .fg input,.fg select{padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;}
+        .form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+        .btn-cancel{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
+        .proc-table-wrap{background:white;border-radius:18px;border:1px solid #e2e8f0;overflow:hidden;}
+        .proc-table{width:100%;border-collapse:collapse;}
+        .proc-table thead{background:#f8fafc;}
+        .proc-table th{text-align:left;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:800;}
+        .proc-table td{padding:14px 16px;font-size:13px;color:#475569;border-bottom:1px solid #f8fafc;vertical-align:middle;}
+        .proc-table tr:last-child td{border-bottom:none;}
+        .oid{font-family:monospace;font-size:11px;background:#f1f5f9;padding:3px 8px;border-radius:6px;font-weight:700;color:#64748b;}
+        .date-sub{font-size:11px;color:#94a3b8;margin-top:2px;}
+        .cat-tag{background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+        .status-tag{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;}
+        .act-btns{display:flex;gap:6px;flex-wrap:wrap;}
+        .mb{padding:5px 12px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+        .mb.blue{background:#eff6ff;color:#3b82f6;}
+        .mb.purple{background:#f5f3ff;color:#8b5cf6;}
+        .mb.green{background:#ecfdf5;color:#10b981;}
+        .mb.red{background:#fef2f2;color:#ef4444;}
       `}</style>
     </div>
   );

@@ -1,208 +1,163 @@
 import React, { useState } from 'react';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Zap, Search, Plus, 
-  Wind, Thermometer, Droplets,
-  Activity, ShieldAlert, CheckCircle,
-  ChevronRight, MoreVertical, LayoutGrid,
-  RefreshCw, FileText, Settings,
-  ArrowUpRight, ArrowDownRight,
-  Battery, Sun, CloudRain
+  Zap, Termometer, Lightbulb, Lock, Unlock, 
+  Wind, Power, PowerOff, Battery, ShieldAlert,
+  Search, Filter, Settings
 } from 'lucide-react';
-import { 
-  BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip,
-  AreaChart, Area
-} from 'recharts';
-import { motion } from 'framer-motion';
-
-const roomHealth = [
-  { floor: '3. Kat', temp: '22°C', energy: '1.2kW', status: 'OK' },
-  { floor: '4. Kat', temp: '23°C', energy: '0.9kW', status: 'OK' },
-  { floor: '5. Kat', temp: '24°C', energy: '1.5kW', status: 'OK' },
-];
-
-const energyData = [
-  { time: '09:00', val: 120 },
-  { time: '10:00', val: 150 },
-  { time: '11:00', val: 180 },
-  { time: '12:00', val: 210 },
-  { time: '13:00', val: 190 },
-];
 
 const SmartRoom = () => {
+  const { rooms } = useHotel();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('tümü');
+
+  // Örnek akıllı oda verisi
+  const smartStatus = rooms.map(r => ({
+    ...r,
+    temp: 22 + Math.floor(Math.random() * 5),
+    power: Math.random() > 0.3 ? 'on' : 'off',
+    light: Math.random() > 0.4 ? 'on' : 'off',
+    lock: Math.random() > 0.2 ? 'locked' : 'unlocked',
+    occupancy: r.status === 'dolu' ? 'occupied' : 'empty'
+  }));
+
+  const filtered = smartStatus.filter(r => {
+    const matchesSearch = r.id.includes(search);
+    if (filter === 'dolu') return matchesSearch && r.status === 'dolu';
+    if (filter === 'boş') return matchesSearch && r.status === 'boş';
+    if (filter === 'açık') return matchesSearch && r.power === 'on';
+    return matchesSearch;
+  });
+
   return (
-    <div className="smart-container">
-      <header className="header">
-         <div className="title-section">
-            <Zap size={32} className="icon-blue"/>
-            <div>
-               <h2>Smart Room & Energy Management</h2>
-               <span>Merkezi İklimlendirme, enerji tasarrufu ve kritik arıza takibi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">MERKEZİ KLİMA KONTROL</button>
-            <button className="btn outline">SENARYO YÖNETİMİ</button>
-            <button className="btn primary blue">SİSTEM SAĞLIĞI (6 Hata)</button>
-         </div>
-      </header>
+    <div className="smart-page">
+      <div className="smart-head">
+        <div>
+          <h2><Zap size={20}/> Akıllı Oda & Enerji Yönetimi</h2>
+          <span>IoT entegrasyonu, enerji tasarrufu ve merkezi kontrol</span>
+        </div>
+        <div className="head-stats">
+          <div className="hs-i"><Power size={14}/> <strong>24</strong> Oda Açık</div>
+          <div className="hs-i"><Battery size={14}/> <strong>%12</strong> Tasarruf</div>
+        </div>
+      </div>
 
-      <div className="smart-grid">
-         {/* Left: Device Segments */}
-         <aside className="left-panel">
-            <section className="card stats-card">
-               <div className="s-row">
-                  <span>Toplam Aktif Cihaz</span>
-                  <strong>1240</strong>
-               </div>
-               <div className="s-row mt-10">
-                  <span>Dış Hava Sıcaklığı</span>
-                  <strong>18 °C</strong>
-               </div>
-            </section>
+      <div className="smart-controls">
+        <div className="search-bar">
+          <Search size={16} color="#94a3b8"/>
+          <input 
+            placeholder="Oda no ara..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="filters">
+          {['tümü', 'dolu', 'boş', 'açık'].map(f => (
+            <button 
+              key={f} 
+              className={`f-pill ${filter === f ? 'active' : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+          <button className="settings-btn"><Settings size={14} /></button>
+        </div>
+      </div>
 
-            <section className="card alert-card mt-20">
-               <div className="a-head">
-                  <ShieldAlert size={16} className="red"/>
-                  <strong>ACİL DURUM ALARMI</strong>
-               </div>
-               <div className="a-content mt-10">
-                  <div className="a-item">
-                     <Droplets size={14} className="blue"/>
-                     <div className="a-text">
-                        <strong>Oda 504:</strong>
-                        <span>Su Kaçağı Algılandı</span>
-                     </div>
-                  </div>
-               </div>
-            </section>
-         </aside>
-
-         {/* Center: Room Matrix */}
-         <section className="main-content">
-            <div className="card matrix-card">
-               <h3>ENVANTER & DURUM MATRİSİ (BMS)</h3>
-               <div className="room-matrix">
-                  {[3,4,5].map(floor => (
-                    <div key={floor} className="floor-row">
-                       <div className="floor-num">{floor}. Kat</div>
-                       <div className="room-dots">
-                          {Array.from({length: 12}).map((_, i) => (
-                            <div key={i} className={`room-dot ${i % 4 === 0 ? 'active' : 'idle'}`}>
-                               <span className="tooltip">Room {floor}0{i+1} - 22°C</span>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-                  ))}
-               </div>
+      <div className="room-grid">
+        {filtered.map((r, i) => (
+          <motion.div 
+            key={r.id} 
+            className={`s-room-card ${r.power}`}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.02 }}
+          >
+            <div className="src-top">
+              <div className="src-id">Oda {r.id}</div>
+              <div className={`src-occ ${r.occupancy}`}>{r.occupancy === 'occupied' ? 'İçeride' : 'Boş'}</div>
             </div>
 
-            <div className="stats-grid mt-20">
-               <div className="card mini-stat">
-                  <span>TASARRUF ORANI</span>
-                  <strong>% 18</strong>
-               </div>
-               <div className="card mini-stat">
-                  <span>AKTÜEL TÜKETİM</span>
-                  <strong>85 kW</strong>
-               </div>
+            <div className="src-main">
+              <div className="src-metric">
+                <Termometer size={16} color="#ef4444"/>
+                <strong>{r.temp}°C</strong>
+              </div>
+              <div className="src-actions">
+                <button className={`src-a-btn ${r.light === 'on' ? 'active' : ''}`} title="Aydınlatma">
+                  <Lightbulb size={16}/>
+                </button>
+                <button className={`src-a-btn ${r.lock === 'locked' ? 'active' : ''}`} title="Kilit">
+                  {r.lock === 'locked' ? <Lock size={16}/> : <Unlock size={16}/>}
+                </button>
+                <button className={`src-a-btn active`} title="Klima">
+                  <Wind size={16}/>
+                </button>
+              </div>
             </div>
-         </section>
 
-         {/* Right: Energy Charts */}
-         <aside className="right-panel">
-            <section className="card energy-card">
-               <div className="e-head">
-                  <h3>ANLIK ENERJİ TÜKETİMİ</h3>
-                  <strong>$8,150</strong>
-               </div>
-               <div style={{ height: 180 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                     <BarChart data={energyData}>
-                        <Bar dataKey="val" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                     </BarChart>
-                  </ResponsiveContainer>
-               </div>
-               <div className="e-meta mt-15">
-                  <div className="e-row">
-                     <Sun size={14} className="gold"/>
-                     <span>Güneş Paneli</span>
-                     <strong>5.05 kW</strong>
-                  </div>
-                  <div className="e-row mt-10">
-                     <CloudRain size={14} className="blue"/>
-                     <span>Su Tüketimi</span>
-                     <strong>1.17 m³</strong>
-                  </div>
-               </div>
-            </section>
-
-            <button className="btn-full mt-20">DETAYLI BMS ANALİZİ</button>
-         </aside>
+            <div className="src-foot">
+              <div className="power-toggle">
+                {r.power === 'on' ? <Power size={14}/> : <PowerOff size={14}/>}
+                <span>Enerji: {r.power === 'on' ? 'Aktif' : 'Kapalı'}</span>
+              </div>
+              <div className="src-more"><MoreHorizontal size={14}/></div>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       <style>{`
-        .smart-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-        .btn.primary.blue { background: #ef4444; color: white; }
-
-        .smart-grid { display: grid; grid-template-columns: 240px 1fr 300px; gap: 30px; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; margin-bottom: 25px; letter-spacing: 0.5px; }
-
-        .s-row { display: flex; justify-content: space-between; font-size: 13px; color: #64748b; }
-        .s-row strong { color: #1e293b; }
-
-        .a-head { display: flex; align-items: center; gap: 10px; color: #ef4444; font-size: 11px; }
-        .a-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #fff1f2; border-radius: 8px; }
-        .a-text { display: flex; flex-direction: column; }
-        .a-text strong { font-size: 11px; color: #1e293b; }
-        .a-text span { font-size: 10px; color: #64748b; }
-
-        .room-matrix { display: flex; flex-direction: column; gap: 20px; }
-        .floor-row { display: flex; align-items: center; gap: 20px; }
-        .floor-num { width: 60px; font-size: 11px; font-weight: 800; color: #94a3b8; }
-        .room-dots { flex: 1; display: flex; gap: 8px; flex-wrap: wrap; }
-        .room-dot { width: 24px; height: 24px; border-radius: 6px; background: #f1f5f9; position: relative; cursor: pointer; }
-        .room-dot.active { background: #3b82f6; }
-        .room-dot.idle { background: #cbd5e1; }
-        .room-dot .tooltip { visibility: hidden; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 5px 10px; border-radius: 4px; font-size: 10px; white-space: nowrap; z-index: 10; }
-        .room-dot:hover .tooltip { visibility: visible; }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .mini-stat { text-align: center; }
-        .mini-stat span { font-size: 10px; font-weight: 800; color: #94a3b8; display: block; margin-bottom: 5px; }
-        .mini-stat strong { font-size: 20px; color: #1e293b; }
-
-        .e-head { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-        .e-row { display: flex; justify-content: space-between; font-size: 12px; }
+        .smart-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .smart-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .smart-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .smart-head span { font-size: 13px; color: #94a3b8; }
         
-        .btn-full { width: 100%; padding: 12px; background: #1e293b; color: white; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; border: none; }
+        .head-stats { display: flex; gap: 12px; }
+        .hs-i { background: #1e293b; color: white; padding: 8px 16px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .hs-i strong { color: #f1c40f; }
 
-        .blue { color: #3b82f6; }
-        .red { color: #ef4444; }
-        .gold { color: #f59e0b; }
-        .mt-20 { margin-top: 20px; }
-        .mt-10 { margin-top: 10px; }
+        .smart-controls { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .search-bar { flex: 1; max-width: 400px; display: flex; align-items: center; gap: 10px; background: white; border: 1.5px solid #e2e8f0; padding: 10px 16px; border-radius: 12px; }
+        .search-bar input { border: none; background: transparent; outline: none; font-size: 13px; color: #475569; width: 100%; }
+        
+        .filters { display: flex; gap: 8px; align-items: center; }
+        .f-pill { padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; transition: 0.2s; }
+        .f-pill.active { background: #1e293b; color: white; border-color: #1e293b; }
+        .settings-btn { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .s-room-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 16px; display: flex; flex-direction: column; gap: 16px; transition: 0.3s; }
+        .s-room-card.off { opacity: 0.6; grayscale: 1; }
+        .s-room-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .src-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .src-id { font-size: 15px; font-weight: 900; color: #1e293b; }
+        .src-occ { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; }
+        .src-occ.occupied { background: #fef2f2; color: #ef4444; }
+        .src-occ.empty { background: #f0fdf4; color: #10b981; }
+
+        .src-main { display: flex; align-items: center; justify-content: space-between; }
+        .src-metric { display: flex; align-items: center; gap: 6px; }
+        .src-metric strong { font-size: 20px; font-weight: 900; color: #1e293b; }
+        
+        .src-actions { display: flex; gap: 6px; }
+        .src-a-btn { width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid #f1f5f9; background: white; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .src-a-btn.active { color: #3b82f6; border-color: #3b82f6; background: #eff6ff; }
+        
+        .src-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+        .power-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #64748b; }
+        .src-room-card.on .power-toggle { color: #10b981; }
+        .src-more { color: #cbd5e1; cursor: pointer; }
       `}</style>
     </div>
   );
 };
+
+const MoreHorizontal = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+);
 
 export default SmartRoom;

@@ -1,234 +1,176 @@
 import React, { useState } from 'react';
-import { 
-  FileText, Search, Shield, 
-  UserCheck, AlertTriangle, Send,
-  FileCheck, Clock, Filter,
-  MoreVertical, Printer, Download,
-  CheckCircle, RefreshCw, Layers,
-  ShieldCheck, ExternalLink, Activity
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const kbsList = [
-  { id: 1, guest: 'Mehmet Yılmaz', tc: '12345678901', birth: '1985', status: 'sent', time: '14:22', nation: 'TR', room: '102' },
-  { id: 2, guest: 'Ayşe Kaya', tc: '98765432109', birth: '1992', status: 'pending', time: '-', nation: 'TR', room: '205' },
-  { id: 3, guest: 'John Smith', passport: 'A1234567', nation: 'UK', status: 'sent', time: '12:05', birth: '1975', room: '301' },
-  { id: 4, guest: 'Hans Müller', passport: 'P772183', nation: 'DE', status: 'pending', time: '-', birth: '1980', room: '404' },
-];
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, CheckCircle, AlertCircle, FileText, Download, Eye, Lock, User, X, Clock } from 'lucide-react';
 
 const KBS = () => {
-  const [isSending, setIsSending] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const { reservations, guests, addNotification } = useHotel();
+  const [sentList, setSentList] = useState(['RES-001','RES-003','RES-008']);
+  const [selected, setSelected] = useState(null);
+  const [sending, setSending] = useState(null);
 
-  const simulateSend = () => {
-    setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      setMsg({ type: 'success', text: 'Tüm bekleyen kayıtlar Emniyet Genel Müdürlüğü (KBS) Portalına aktarıldı.' });
-    }, 2000);
+  const arrivals = reservations.filter(r => r.status === 'check-in');
+  const pending  = arrivals.filter(r => !sentList.includes(r.id));
+
+  const sendKBS = async (resId) => {
+    setSending(resId);
+    await new Promise(r=>setTimeout(r,1500));
+    setSentList(prev=>[...prev,resId]);
+    setSending(null);
+    const res = reservations.find(r=>r.id===resId);
+    addNotification({ type:'success', msg:`KBS gönderildi: ${res?.guest}` });
+  };
+
+  const sendAll = async () => {
+    for (const r of pending) { await sendKBS(r.id); }
   };
 
   return (
-    <div className="kbs-container">
-      <header className="header">
-         <div className="title-section">
-            <Shield size={32} className="icon-red"/>
-            <div>
-               <h2>KBS / AKBS Entegrasyon Merkezi</h2>
-               <span>Kimlik Bildirme Sistemi (Emniyet/Jandarma) Yasal Bildirim Paneli</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn-kbs outline"><Printer size={18}/> POLİS DEFTERİ</button>
-            <button className="btn-kbs primary" onClick={simulateSend} disabled={isSending}>
-               {isSending ? <RefreshCw size={18} className="spin"/> : <Send size={18}/>}
-               {isSending ? 'GÖNDERİLİYOR...' : 'TÜMÜNÜ KBS\'YE AKTAR'}
+    <div className="kbs-page">
+      <div className="kbs-head">
+        <div>
+          <h2><Shield size={20}/> KBS — Kimlik Bildirim Sistemi</h2>
+          <span>Polis/Jandarma Kimlik Bildirim Sistemi entegrasyonu</span>
+        </div>
+        <div className="kbs-actions">
+          <div className="kbs-status"><div className="status-dot"/><span>Bağlantı: Aktif</span></div>
+          {pending.length>0 && (
+            <button className="btn-primary" onClick={sendAll}>
+              <Shield size={15}/> Tümünü Gönder ({pending.length})
             </button>
-         </div>
-      </header>
-
-      {msg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`msg-banner ${msg.type}`}>
-           <CheckCircle size={18}/> {msg.text}
-        </motion.div>
-      )}
-
-      <div className="kbs-grid">
-         {/* Live Stats Row */}
-         <section className="stats-grid">
-            <div className="card stat-box">
-               <div className="sb-icon purple"><Activity size={20}/></div>
-               <div className="sb-data">
-                  <span className="label">BEKLEYEN BİLDİRİM</span>
-                  <strong>12</strong>
-                  <small className="warn">Son 2 saat uyarısı!</small>
-               </div>
-            </div>
-            <div className="card stat-box">
-               <div className="sb-icon green"><ShieldCheck size={20}/></div>
-               <div className="sb-data">
-                  <span className="label">BAŞARILI GÖNDERİM</span>
-                  <strong>45</strong>
-                  <small className="green">Aktif Gün</small>
-               </div>
-            </div>
-            <div className="card stat-box">
-               <div className="sb-icon blue"><Layers size={20}/></div>
-               <div className="sb-data">
-                  <span className="label">XML ARŞİVİ</span>
-                  <strong>1,420</strong>
-                  <small>Bulut Depolama</small>
-               </div>
-            </div>
-         </section>
-
-         {/* Main List */}
-         <section className="card table-section">
-            <div className="section-header">
-               <div className="sh-title">
-                  <FileText size={20} className="blue"/>
-                  <h3>GÜNLÜK MİSAFİR LİSTESİ</h3>
-               </div>
-               <div className="search-box">
-                  <Search size={16} />
-                  <input type="text" placeholder="Misafir adı veya TC..." />
-               </div>
-            </div>
-            <table className="kbs-table">
-               <thead>
-                  <tr>
-                     <th>Oda</th>
-                     <th>Misafir Adı</th>
-                     <th>Kimlik / Pasaport No</th>
-                     <th>Uyruk</th>
-                     <th>D. Tarihi</th>
-                     <th>Durum</th>
-                     <th>Gönderim</th>
-                     <th>İşlem</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {kbsList.map((k, idx) => (
-                    <tr key={idx}>
-                       <td><div className="room-no">{k.room}</div></td>
-                       <td><strong>{k.guest}</strong></td>
-                       <td>{k.tc || k.passport}</td>
-                       <td>{k.nation}</td>
-                       <td>{k.birth}</td>
-                       <td>
-                          <span className={`status-pill ${k.status}`}>
-                             {k.status === 'sent' ? 'Aktarıldı' : 'Kuyrukta'}
-                          </span>
-                       </td>
-                       <td>{k.time !== '-' ? <div className="time-tag">{k.time}</div> : '-'}</td>
-                       <td>
-                          <div className="row-actions">
-                             <button className="icon-btn" title="XML önizleme"><ExternalLink size={14}/></button>
-                             <button className="icon-btn" title="Detay"><MoreVertical size={14}/></button>
-                          </div>
-                       </td>
-                    </tr>
-                  ))}
-               </tbody>
-            </table>
-         </section>
-
-         {/* Compliance Sidebar */}
-         <aside className="compliance-sidebar">
-            <section className="card warning-card">
-               <div className="wc-head">
-                  <AlertTriangle size={24} className="orange"/>
-                  <h3>YASAL UYUMLULUK</h3>
-               </div>
-               <p>1774 Sayılı Kimlik Bildirme Kanunu uyarınca, tesise gelen her misafirin kimlik bilgileri giriş tarihinden itibaren en geç 2 saat içinde kolluk kuvvetlerine bildirilmelidir.</p>
-               <div className="compliance-checklist">
-                  <div className="cl-item"><CheckCircle size={14} className="green"/> KVKK Onayı Alındı</div>
-                  <div className="cl-item"><CheckCircle size={14} className="green"/> E-İmza Modülü Aktif</div>
-                  <div className="cl-item"><CheckCircle size={14} className="green"/> XML Şifreleme (AES-256)</div>
-               </div>
-            </section>
-            
-            <div className="action-stack mt-20">
-               <button className="btn-full outline"><Download size={16}/> XML OLARAK İNDİR</button>
-               <button className="btn-full outline mt-10"><FileCheck size={16}/> SİSTEM DOĞRULAMA</button>
-            </div>
-         </aside>
+          )}
+        </div>
       </div>
 
+      {/* Stats */}
+      <div className="kbs-stats">
+        <div className="ks"><CheckCircle size={20} color="#10b981"/><div><strong>{sentList.length}</strong><span>Gönderildi</span></div></div>
+        <div className="ks"><AlertCircle size={20} color="#f59e0b"/><div><strong style={{color:pending.length>0?'#ef4444':'#10b981'}}>{pending.length}</strong><span>Bekliyor</span></div></div>
+        <div className="ks"><User size={20} color="#3b82f6"/><div><strong>{arrivals.length}</strong><span>İç Misafir</span></div></div>
+      </div>
+
+      {pending.length > 0 && (
+        <div className="warn-band"><AlertCircle size={16}/><span>{pending.length} misafir için KBS bildirimi gönderilmemiş!</span></div>
+      )}
+
+      <div className="kbs-table-wrap">
+        <table className="kbs-table">
+          <thead><tr><th>Rezervasyon</th><th>Misafir</th><th>Oda</th><th>Giriş</th><th>Uyruk</th><th>Belge No</th><th>KBS Durumu</th><th>İşlem</th></tr></thead>
+          <tbody>
+            {arrivals.map((r,i)=>{
+              const g = guests.find(g=>g.name===r.guest)||{};
+              const sent = sentList.includes(r.id);
+              const isSending = sending===r.id;
+              return (
+                <motion.tr key={r.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.05}}>
+                  <td><span className="rid">{r.id}</span></td>
+                  <td><div className="g-cell"><div className="g-av">{r.guest[0]}</div><strong>{r.guest}</strong></div></td>
+                  <td><span className="room-tag">{r.room}</span></td>
+                  <td>{r.checkIn}</td>
+                  <td><span className="nat-tag">{g.nationality||'TR'}</span></td>
+                  <td><span className="doc">{g.tcNo||g.passport||'—'}</span></td>
+                  <td>
+                    {isSending
+                      ? <span className="kbs-pending">⏳ Gönderiliyor...</span>
+                      : sent
+                      ? <span className="kbs-sent"><CheckCircle size={14}/> Gönderildi</span>
+                      : <span className="kbs-wait"><AlertCircle size={14}/> Bekliyor</span>}
+                  </td>
+                  <td>
+                    <div className="act-row">
+                      {!sent && !isSending && (
+                        <button className="act-btn blue" onClick={()=>sendKBS(r.id)}>
+                          <Shield size={13}/> KBS Gönder
+                        </button>
+                      )}
+                      <button className="act-btn grey" onClick={()=>setSelected(r)}><Eye size={13}/> Görüntüle</button>
+                    </div>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detail modal */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div className="modal-overlay" onClick={()=>setSelected(null)} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+            <motion.div className="kbs-modal" onClick={e=>e.stopPropagation()} initial={{scale:.9}} animate={{scale:1}}>
+              <div className="modal-head"><h3>KBS Kayıt Detayı — {selected.guest}</h3><button onClick={()=>setSelected(null)}><X size={18}/></button></div>
+              <div className="kbs-detail">
+                {[
+                  ['Rezervasyon No', selected.id],
+                  ['Ad Soyad', selected.guest],
+                  ['Oda', selected.room],
+                  ['Giriş Tarihi', selected.checkIn],
+                  ['Çıkış Tarihi', selected.checkOut],
+                  ['Kişi Sayısı', selected.pax],
+                  ['KBS Durumu', sentList.includes(selected.id) ? '✓ Gönderildi' : '⏳ Bekliyor'],
+                ].map(([k,v])=>(
+                  <div key={k} className="kd-row"><span>{k}</span><strong>{v}</strong></div>
+                ))}
+              </div>
+              <div className="modal-foot">
+                <button className="btn-cancel" onClick={()=>setSelected(null)}>Kapat</button>
+                {!sentList.includes(selected.id) && (
+                  <button className="btn-primary" onClick={()=>{sendKBS(selected.id);setSelected(null);}}>
+                    <Shield size={15}/> KBS'ye Gönder
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
-        .kbs-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-red { color: #ef4444; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { color: #64748b; font-size: 14px; }
-
-        .btn-kbs { padding: 12px 24px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; }
-        .btn-kbs.primary { background: #ef4444; color: white; border: none; }
-        .btn-kbs.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-        .btn-kbs:disabled { opacity: 0.7; cursor: not-allowed; }
-
-        .msg-banner { padding: 15px 25px; border-radius: 12px; display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 700; }
-        .msg-banner.success { background: #ecfdf5; color: #065f46; border-left: 5px solid #10b981; }
-
-        .kbs-grid { display: grid; grid-template-columns: 1fr 320px; gap: 30px; }
-
-        .stats-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .stat-box { display: flex; align-items: center; gap: 20px; padding: 25px; }
-        .sb-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-        .sb-icon.purple { background: #f5f3ff; color: #8b5cf6; }
-        .sb-icon.green { background: #ecfdf5; color: #10b981; }
-        .sb-icon.blue { background: #eff6ff; color: #3b82f6; }
-        .sb-data .label { font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
-        .sb-data strong { display: block; font-size: 26px; color: #1e293b; margin: 4px 0; }
-        .sb-data small { font-size: 11px; font-weight: 700; }
-        .sb-data small.warn { color: #ef4444; }
-
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .sh-title { display: flex; align-items: center; gap: 12px; }
-        .section-header h3 { font-size: 15px; font-weight: 800; color: #1e293b; }
-
-        .search-box { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px; }
-        .search-box input { background: transparent; border: none; outline: none; font-size: 13px; width: 220px; }
-
-        .kbs-table { width: 100%; border-collapse: collapse; }
-        .kbs-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; }
-        .kbs-table td { padding: 15px 12px; font-size: 14px; border-bottom: 1px solid #f8fafc; color: #475569; }
-
-        .room-no { background: #f1f5f9; width: 40px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #1e293b; font-size: 13px; border: 1px solid #e2e8f0; }
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; }
-        .status-pill.sent { background: #ecfdf5; color: #10b981; }
-        .status-pill.pending { background: #fffcf0; color: #b45309; }
-        .time-tag { font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
-        .row-actions { display: flex; gap: 10px; }
-        .icon-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; }
-
-        .warning-card { background: #fffbeb; border-color: #fef3c7; }
-        .wc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-        .wc-head h3 { font-size: 15px; font-weight: 800; color: #92400e; }
-        .warning-card p { font-size: 13px; color: #92400e; line-height: 1.6; font-weight: 600; }
-        .compliance-checklist { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .cl-item { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #92400e; opacity: 0.8; }
-
-        .btn-full { width: 100%; padding: 15px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-full.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spin { animation: spin 2s linear infinite; }
-        .green { color: #10b981; }
-        .red { color: #ef4444; }
-        .orange { color: #f59e0b; }
-        .blue { color: #3b82f6; }
-        .mt-20 { margin-top: 20px; }
-        .mt-10 { margin-top: 10px; }
+        .kbs-page{padding:28px;display:flex;flex-direction:column;gap:18px;}
+        .kbs-head{display:flex;justify-content:space-between;align-items:flex-start;}
+        .kbs-head h2{font-size:22px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:10px;}
+        .kbs-head span{font-size:13px;color:#94a3b8;}
+        .kbs-actions{display:flex;align-items:center;gap:14px;}
+        .kbs-status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#64748b;background:white;padding:9px 16px;border-radius:10px;border:1px solid #e2e8f0;}
+        .status-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px #dcfce7;}
+        .btn-primary{padding:10px 18px;border-radius:12px;border:none;background:#3b82f6;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+        .kbs-stats{display:flex;gap:16px;}
+        .ks{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:18px 24px;display:flex;align-items:center;gap:14px;}
+        .ks strong{display:block;font-size:24px;font-weight:900;color:#1e293b;}
+        .ks span{font-size:12px;color:#94a3b8;font-weight:700;}
+        .warn-band{display:flex;align-items:center;gap:10px;background:#fffbeb;color:#b45309;padding:12px 18px;border-radius:10px;border:1px solid #fde68a;font-size:13px;font-weight:600;}
+        .kbs-table-wrap{background:white;border-radius:18px;border:1px solid #e2e8f0;overflow:hidden;}
+        .kbs-table{width:100%;border-collapse:collapse;}
+        .kbs-table thead{background:#f8fafc;}
+        .kbs-table th{text-align:left;padding:12px 14px;font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:800;}
+        .kbs-table td{padding:14px;font-size:13px;color:#475569;border-bottom:1px solid #f8fafc;}
+        .kbs-table tr:last-child td{border-bottom:none;}
+        .rid{font-family:monospace;font-size:11px;background:#f1f5f9;padding:3px 8px;border-radius:6px;color:#64748b;font-weight:700;}
+        .g-cell{display:flex;align-items:center;gap:8px;}
+        .g-av{width:30px;height:30px;background:#eff6ff;color:#3b82f6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;}
+        .g-cell strong{font-size:13px;color:#1e293b;}
+        .room-tag{background:#f1f5f9;color:#1e293b;font-weight:800;padding:3px 10px;border-radius:8px;font-size:12px;}
+        .nat-tag{background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+        .doc{font-family:monospace;font-size:12px;color:#64748b;}
+        .kbs-sent{display:flex;align-items:center;gap:5px;color:#10b981;font-weight:700;font-size:12px;}
+        .kbs-wait{display:flex;align-items:center;gap:5px;color:#f59e0b;font-weight:700;font-size:12px;}
+        .kbs-pending{color:#3b82f6;font-weight:700;font-size:12px;}
+        .act-row{display:flex;gap:8px;}
+        .act-btn{padding:6px 12px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+        .act-btn.blue{background:#eff6ff;color:#3b82f6;}
+        .act-btn.grey{background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;}
+        .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .kbs-modal{background:white;border-radius:22px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.4);width:440px;}
+        .modal-head{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;}
+        .modal-head h3{font-size:16px;font-weight:800;color:#1e293b;}
+        .modal-head button{background:transparent;border:none;color:#94a3b8;cursor:pointer;}
+        .kbs-detail{padding:20px 24px;display:flex;flex-direction:column;gap:0;}
+        .kd-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f8fafc;font-size:13px;}
+        .kd-row span{color:#64748b;}
+        .kd-row strong{color:#1e293b;}
+        .kd-row:last-child{border-bottom:none;}
+        .modal-foot{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;}
+        .btn-cancel{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;font-weight:700;cursor:pointer;}
       `}</style>
     </div>
   );

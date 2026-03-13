@@ -1,189 +1,213 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, Calendar, CreditCard, 
-  MapPin, Phone, Mail, 
-  FileText, Plus, Save,
-  X, ChevronRight, Hash,
-  Users, Globe, Star, AlertTriangle
+  User, Calendar, CreditCard, FileText, 
+  MapPin, Phone, Mail, Clock, 
+  ShieldCheck, AlertCircle, Edit3, 
+  Printer, Share2, MoreVertical,
+  ChevronRight, ArrowRight, DollarSign,
+  Briefcase, Star, Info
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
-const ReservationCard = () => {
+const ReservationCard = ({ reservationId = "RES-9942", onClose }) => {
+  const [activeTab, setActiveTab] = useState('genel');
+
+  const guestInfo = {
+    name: 'Sarah Johnson',
+    type: 'VIP - Gold',
+    phone: '+44 7700 900077',
+    mail: 'sarah.j@example.com',
+    country: 'United Kingdom',
+    company: 'TechFlow Global',
+    totalStays: 12,
+    preferences: ['Yüksek Kat', 'Ekstra Yastık', 'Deniz Manzarası'],
+  };
+
+  const stayInfo = {
+    dates: '15 Mar - 20 Mar 2026',
+    nights: 5,
+    room: '102 - Deluxe Sea View',
+    pax: '2 Yetişkin, 0 Çocuk',
+    pension: 'Her Şey Dahil',
+    source: 'Booking.com',
+    status: 'Gelecek',
+  };
+
+  const financial = {
+    total: '₺18,450.00',
+    paid: '₺5,000.00',
+    balance: '₺13,450.00',
+    currency: 'TRY',
+  };
+
   return (
-    <div className="card-container">
-      <header className="header">
-         <div className="title-section">
-            <div className="pnr-badge">RES-40291</div>
-            <div>
-               <h2>Misafir Rezervasyon Kartı</h2>
-               <span>Konaklama detayları, fiyatlandırma ve misafir tercihleri</span>
+    <div className="res-card-overlay">
+      <motion.div 
+        className="res-card-modal"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+      >
+        {/* Header */}
+        <div className="rc-header">
+          <div className="rch-left">
+            <div className="res-id">#{reservationId}</div>
+            <div className="res-status-pill">Konfirme Edildi</div>
+          </div>
+          <div className="rch-actions">
+            <button className="btn-icon"><Edit3 size={16}/></button>
+            <button className="btn-icon"><Printer size={16}/></button>
+            <button className="btn-icon"><Share2 size={16}/></button>
+            <button className="btn-close" onClick={onClose}>×</button>
+          </div>
+        </div>
+
+        <div className="rc-body">
+          {/* Main Info Strip */}
+          <div className="rc-strip">
+            <div className="rcs-item">
+              <div className="rcsi-icon"><User size={20}/></div>
+              <div className="rcsi-content">
+                <strong>{guestInfo.name}</strong>
+                <span><Star size={10} fill="#f59e0b" color="#f59e0b"/> {guestInfo.type}</span>
+              </div>
             </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline"><X size={18}/> VAZGEÇ</button>
-            <button className="btn primary"><Save size={18}/> KARTI KAYDET</button>
-         </div>
-      </header>
+            <div className="rcs-item">
+              <div className="rcsi-icon"><Calendar size={20}/></div>
+              <div className="rcsi-content">
+                <strong>{stayInfo.dates}</strong>
+                <span>{stayInfo.nights} Gece · {stayInfo.pax}</span>
+              </div>
+            </div>
+            <div className="rcs-item">
+              <div className="rcsi-icon"><Briefcase size={20}/></div>
+              <div className="rcsi-content">
+                <strong>Oda {stayInfo.room}</strong>
+                <span>{stayInfo.pension}</span>
+              </div>
+            </div>
+          </div>
 
-      <div className="main-content">
-         {/* Left Column: Form */}
-         <div className="form-column">
-            <section className="card-section">
-               <div className="section-head"><User size={20}/> <h3>MİSAFİR BİLGİLERİ</h3></div>
-               <div className="form-grid">
-                  <div className="input-group">
-                     <label>Adı Soyadı</label>
-                     <input type="text" defaultValue="Ahmet Yılmaz" />
-                  </div>
-                  <div className="input-group">
-                     <label>Uyruk</label>
-                     <select><option>Türkiye</option><option>Almanya</option></select>
-                  </div>
-                  <div className="input-group">
-                     <label>E-Posta</label>
-                     <div className="with-icon"><Mail size={16}/><input type="text" defaultValue="ahmet@example.com" /></div>
-                  </div>
-                  <div className="input-group">
-                     <label>Telefon</label>
-                     <div className="with-icon"><Phone size={16}/><input type="text" defaultValue="+90 532 ..." /></div>
-                  </div>
-               </div>
-            </section>
-
-            <section className="card-section mt-30">
-               <div className="section-head"><Calendar size={20}/> <h3>KONAKLAMA DETAYLARI</h3></div>
-               <div className="form-grid">
-                  <div className="input-group">
-                     <label>Giriş Tarihi</label>
-                     <input type="date" defaultValue="2024-03-14" />
-                  </div>
-                  <div className="input-group">
-                     <label>Çıkış Tarihi</label>
-                     <input type="date" defaultValue="2024-03-17" />
-                  </div>
-                  <div className="input-group">
-                     <label>Oda Tipi</label>
-                     <select><option>DBL Deluxe Sea View</option><option>Suite</option></select>
-                  </div>
-                  <div className="input-group">
-                     <label>Kişi (Yetişkin / Çocuk)</label>
-                     <div className="dual-input">
-                        <input type="number" defaultValue="2" />
-                        <input type="number" defaultValue="0" />
-                     </div>
-                  </div>
-               </div>
-            </section>
-
-            <section className="card-section mt-30">
-               <div className="section-head"><CreditCard size={20}/> <h3>FİYATLANDIRMA & ÖDEME</h3></div>
-               <div className="form-grid">
-                  <div className="input-group">
-                     <label>Pansiyon Tipi</label>
-                     <select><option>Oda Kahvaltı (BB)</option><option>Herşey Dahil (AI)</option></select>
-                  </div>
-                  <div className="input-group">
-                     <label>Günlük Birim Fiyat</label>
-                     <div className="with-icon"><span className="unit">₺</span><input type="text" defaultValue="4,150.00" /></div>
-                  </div>
-                  <div className="input-group full">
-                     <label>Toplam Konaklama Tutarı</label>
-                     <div className="total-display">₺ 12,450.00</div>
-                  </div>
-               </div>
-            </section>
-         </div>
-
-         {/* Right Column: Sidebar info */}
-         <aside className="summary-column">
-            <div className="side-card profile-card">
-               <div className="avatar">AY</div>
-               <h4>Ahmet Yılmaz</h4>
-               <span className="badge-loyal">Silver Member</span>
-               <div className="stats-mini">
-                  <div className="sm"><span>Stays</span><strong>12</strong></div>
-                  <div className="sm"><span>Revenue</span><strong>₺ 84K</strong></div>
-               </div>
+          <div className="rc-layout">
+            {/* Sidebar List */}
+            <div className="rc-nav">
+              {[
+                { id: 'genel', label: 'Genel Bilgiler', icon: <Info size={16}/> },
+                { id: 'folio', label: 'Folio & Ödemeler', icon: <CreditCard size={16}/> },
+                { id: 'notlar', label: 'Özel Notlar', icon: <FileText size={16}/> },
+                { id: 'logs', label: 'İşlem Geçmişi', icon: <Clock size={16}/> },
+              ].map(t => (
+                <button 
+                  key={t.id} 
+                  className={`rc-nav-btn ${activeTab === t.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(t.id)}
+                >
+                  {t.icon}
+                  <span>{t.label}</span>
+                  {activeTab === t.id && <motion.div layoutId="rc-nav-bg" className="rc-nav-active-bg" />}
+                </button>
+              ))}
             </div>
 
-            <div className="side-card alert-card mt-20">
-               <div className="head"><AlertTriangle size={18}/> <span>HIZLI NOTLAR</span></div>
-               <textarea placeholder="Misafir isteği, tercihleri..." defaultValue="Yüksek kat, deniz manzaralı oda önceliği. Alerji: Domates."></textarea>
-            </div>
+            {/* Content Area */}
+            <div className="rc-main-content">
+              <AnimatePresence mode="wait">
+                {activeTab === 'genel' && (
+                  <motion.div 
+                    key="genel" 
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: -10 }}
+                    className="rc-tab-panel"
+                  >
+                    <div className="rc-grid">
+                      <div className="rc-box">
+                        <h4>İletişim Bilgileri</h4>
+                        <div className="rc-info-list">
+                          <div className="ril-i"><Phone size={14}/> {guestInfo.phone}</div>
+                          <div className="ril-i"><Mail size={14}/> {guestInfo.mail}</div>
+                          <div className="ril-i"><MapPin size={14}/> {guestInfo.country}</div>
+                        </div>
+                      </div>
+                      <div className="rc-box">
+                        <h4>Fiyatlandırma Özeti</h4>
+                        <div className="rc-price-grid">
+                          <div className="rpg-i"><span>Toplam Tutar</span><strong>{financial.total}</strong></div>
+                          <div className="rpg-i"><span>Ödenen</span><strong className="green">{financial.paid}</strong></div>
+                          <div className="rpg-i divider"><span>Kalan Borç</span><strong className="red">{financial.balance}</strong></div>
+                        </div>
+                      </div>
+                    </div>
 
-            <div className="side-card summary-box mt-20">
-               <h3>REZERVASYON ÖZETİ</h3>
-               <div className="s-row"><span>Giriş</span><strong>14.03.2024</strong></div>
-               <div className="s-row"><span>Geceleme</span><strong>3 Gece</strong></div>
-               <div className="s-row"><span>Kaynak</span><strong>Booking.com</strong></div>
-               <div className="s-row total"><span>GENEL TOPLAM</span><strong>₺ 12,450</strong></div>
+                    <div className="rc-full-box">
+                      <h4>Misafir Tercihleri</h4>
+                      <div className="pref-tags">
+                        {guestInfo.preferences.map(p => <span key={p} className="p-tag">#{p}</span>)}
+                      </div>
+                    </div>
+
+                    <div className="rc-actions-footer">
+                      <button className="btn-secondary">Check-In Başlat</button>
+                      <button className="btn-primary">Folio'ya Git <ArrowRight size={14}/></button>
+                    </div>
+                  </motion.div>
+                )}
+                {/* Diğer tablar dummy olarak UI'da yer alır */}
+              </AnimatePresence>
             </div>
-         </aside>
-      </div>
+          </div>
+        </div>
+      </motion.div>
 
       <style>{`
-        .card-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
+        .res-card-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .res-card-modal { background: white; width: 100%; max-width: 900px; border-radius: 32px; overflow: hidden; box-shadow: 0 40px 60px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; max-height: 90vh; }
+        
+        .rc-header { padding: 24px 32px; background: #1e293b; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .res-id { font-family: monospace; font-size: 14px; font-weight: 800; opacity: 0.6; }
+        .res-status-pill { font-size: 11px; font-weight: 800; background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; margin-top: 4px; }
+        .rch-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-icon:hover { background: rgba(255,255,255,0.2); }
+        .btn-close { font-size: 24px; color: white; background: transparent; border: none; cursor: pointer; margin-left: 10px; opacity: 0.6; transition: 0.2s; }
+        .btn-close:hover { opacity: 1; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .pnr-badge { background: #1e293b; color: white; padding: 10px 15px; border-radius: 10px; font-weight: 900; font-family: monospace; font-size: 16px; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
+        .rc-body { flex: 1; overflow-y: auto; padding: 0 32px 32px; }
+        
+        .rc-strip { background: #f8fafc; margin: 0 -32px; padding: 24px 32px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 40px; }
+        .rcs-item { display: flex; align-items: center; gap: 16px; }
+        .rcsi-icon { width: 44px; height: 44px; background: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #3b82f6; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .rcsi-content strong { display: block; font-size: 16px; color: #1e293b; }
+        .rcsi-content span { font-size: 12px; color: #94a3b8; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; border: none; font-size: 14px; }
-        .btn.primary { background: #3b82f6; color: white; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
+        .rc-layout { display: flex; gap: 32px; margin-top: 24px; }
+        .rc-nav { width: 200px; display: flex; flex-direction: column; gap: 4px; position: relative; }
+        .rc-nav-btn { padding: 12px 16px; border-radius: 12px; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left; transition: 0.2s; position: relative; }
+        .rc-nav-btn.active { color: #3b82f6; }
+        .rc-nav-active-bg { position: absolute; inset: 0; background: #eff6ff; border-radius: 12px; z-index: -1; }
 
-        .main-content { display: grid; grid-template-columns: 1fr 340px; gap: 30px; }
+        .rc-main-content { flex: 1; display: flex; flex-direction: column; }
+        .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        .rc-box h4 { font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 16px; border-bottom: 2px solid #f8fafc; padding-bottom: 8px; }
+        .rc-info-list { display: flex; flex-direction: column; gap: 12px; }
+        .ril-i { font-size: 13px; color: #475569; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        
+        .rc-price-grid { display: flex; flex-direction: column; gap: 10px; }
+        .rpg-i { display: flex; justify-content: space-between; font-size: 13px; }
+        .rpg-i span { color: #94a3b8; }
+        .rpg-i strong { color: #1e293b; font-weight: 800; }
+        .rpg-i strong.green { color: #10b981; }
+        .rpg-i strong.red { color: #ef4444; }
+        .rpg-i.divider { border-top: 1px dashed #e2e8f0; padding-top: 10px; margin-top: 5px; }
 
-        .card-section { background: white; border-radius: 20px; padding: 30px; border: 1px solid #e2e8f0; }
-        .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; color: #3b82f6; }
-        .section-head h3 { font-size: 14px; font-weight: 900; letter-spacing: 1px; color: #1e293b; }
+        .rc-full-box { margin-bottom: 32px; }
+        .rc-full-box h4 { font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 12px; }
+        .pref-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .p-tag { background: #f1f5f9; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #475569; }
 
-        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .input-group.full { grid-column: 1 / -1; }
-        .input-group label { font-size: 12px; font-weight: 800; color: #94a3b8; }
-        .input-group input, .input-group select { padding: 12px 15px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 14px; outline: none; transition: border-color 0.2s; }
-        .input-group input:focus { border-color: #3b82f6; }
-
-        .with-icon { position: relative; display: flex; align-items: center; }
-        .with-icon :global(svg) { position: absolute; left: 15px; color: #94a3b8; }
-        .with-icon .unit { position: absolute; left: 15px; font-weight: 800; color: #94a3b8; }
-        .with-icon input { padding-left: 45px; width: 100%; }
-
-        .dual-input { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        .total-display { background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; font-size: 28px; font-weight: 900; color: #1e40af; text-align: center; }
-
-        .side-card { background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0; }
-        .profile-card { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .avatar { width: 70px; height: 70px; background: #eff6ff; color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .profile-card h4 { font-size: 18px; font-weight: 800; color: #1e293b; }
-        .badge-loyal { background: #f1f5f9; color: #64748b; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; }
-        .stats-mini { display: flex; gap: 30px; margin-top: 20px; }
-        .sm span { display: block; font-size: 10px; color: #94a3b8; font-weight: 800; }
-        .sm strong { font-size: 16px; color: #1e293b; }
-
-        .alert-card .head { display: flex; align-items: center; gap: 10px; color: #f59e0b; margin-bottom: 15px; font-size: 13px; font-weight: 800; }
-        .alert-card textarea { width: 100%; height: 100px; padding: 15px; border-radius: 12px; border: 1px solid #fef3c7; background: #fffbeb; font-size: 13px; color: #92400e; outline: none; line-height: 1.6; }
-
-        .summary-box h3 { font-size: 13px; font-weight: 900; margin-bottom: 20px; letter-spacing: 1px; color: #1e293b; }
-        .s-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
-        .s-row span { color: #94a3b8; font-weight: 700; }
-        .s-row strong { color: #1e293b; font-weight: 800; }
-        .s-row.total { margin-top: 15px; padding-top: 15px; border-top: 2px dashed #f1f5f9; }
-        .s-row.total strong { font-size: 20px; color: #3b82f6; }
-
-        .mt-30 { margin-top: 30px; }
-        .mt-20 { margin-top: 20px; }
+        .rc-actions-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 24px; border-top: 1px solid #f1f5f9; }
+        .btn-secondary { padding: 12px 24px; border: 1.5px solid #e2e8f0; background: white; color: #475569; font-weight: 800; font-size: 13px; border-radius: 14px; cursor: pointer; }
+        .btn-primary { padding: 12px 24px; background: #1e293b; color: white; border: none; font-weight: 800; font-size: 13px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary:hover { background: #334155; transform: translateY(-2px); }
       `}</style>
     </div>
   );

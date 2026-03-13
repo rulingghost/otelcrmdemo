@@ -1,230 +1,133 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FileText, Search, Plus, 
-  Handshake, Calendar, DollarSign,
-  TrendingUp, Globe, Users,
-  CheckCircle, MoreVertical, Filter,
-  ArrowRight, Download, Edit
+  FileText, Plus, Search, Filter, 
+  Download, Eye, Calendar, Clock,
+  CheckCircle, AlertCircle, Building2, User
 } from 'lucide-react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
-} from 'recharts';
-
-const agencyData = [
-  { name: 'Jan', booking: 400, expedia: 240, ets: 180 },
-  { name: 'Feb', booking: 300, expedia: 139, ets: 210 },
-  { name: 'Mar', booking: 200, expedia: 980, ets: 290 },
-  { name: 'Apr', booking: 278, expedia: 390, ets: 320 },
-  { name: 'May', booking: 189, expedia: 480, ets: 250 },
-  { name: 'Jun', booking: 239, expedia: 380, ets: 410 },
-];
-
-const contractList = [
-  { id: 1, agency: 'Booking.com', type: 'Komisyonlu', rate: '%15', status: 'active', expiry: '31.12.2024' },
-  { id: 2, agency: 'Expedia', type: 'Net Fiyat', rate: '$120', status: 'active', expiry: '31.12.2024' },
-  { id: 3, agency: 'ETSTUR', type: 'Kontenjan', rate: '20 Oda', status: 'pending', expiry: '01.06.2024' },
-];
 
 const Contracts = () => {
+  const [activeTab, setActiveTab] = useState('tümü');
+
+  const contracts = [
+    { id: 'CNT-2026-001', name: 'Booking.com Global', partner: 'Booking.com', type: 'OTA', date: '01 Jan 24 - 31 Dec 26', status: 'aktif', price: '%15 Komisyon' },
+    { id: 'CNT-2026-002', name: 'Acenta X Tatil Paketi', partner: 'Acenta X', type: 'Acenta', date: '01 Mar 26 - 31 Aug 26', status: 'aktif', price: '₺1.450 Sabit' },
+    { id: 'CNT-2026-003', name: 'Kurumsal Konaklama - Tech-A', partner: 'Tech-A Corp', type: 'Kurumsal', date: '01 Feb 26 - 01 Feb 27', status: 'incelemede', price: '₺2.100 Sabit' },
+    { id: 'CNT-2026-004', name: 'Gıda Tedarik Sözleşmesi', partner: 'Metro Market', type: 'Tedarikçi', date: '01 Jan 26 - 01 Jan 28', status: 'süresi_doluyor', price: 'Lise Fiyatı -%10' },
+  ];
+
   return (
-    <div className="contracts-container">
-      <div className="header">
-         <div className="title-section">
-            <Handshake size={32} className="icon-blue"/>
-            <div>
-               <h2>Acente Kontrat & Fiyat Yönetimi</h2>
-               <span>Sezonluk anlaşmalar, aksiyonlar ve kontenjan takibi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn-contract primary"><Plus size={18}/> YENİ KONTRAT EKLE</button>
-            <button className="btn-contract outline"><DollarSign size={18}/> FİYAT KOPYALA</button>
-         </div>
+    <div className="cnt-page">
+      <div className="cnt-head">
+        <div>
+          <h2><FileText size={20}/> Sözleşme & Kontrat Yönetimi</h2>
+          <span>Acenta, kurumsal ve tedarikçi kontratları, PDF arşiv ve fiyat anlaşmaları</span>
+        </div>
+        <button className="btn-primary"><Plus size={15}/> Yeni Sözleşme Ekle</button>
       </div>
 
-      <div className="contracts-grid">
-         {/* Performance Chart */}
-         <section className="card chart-card">
-            <div className="section-header">
-               <h3>ACENTE PERFORMANS ANALİZİ (YILLIK)</h3>
-               <div className="chart-legend">
-                  <div className="legend-item"><div className="dot blue"></div> Booking</div>
-                  <div className="legend-item"><div className="dot red"></div> Expedia</div>
-                  <div className="legend-item"><div className="dot green"></div> ETSTUR</div>
-               </div>
-            </div>
-            <div style={{ height: 300 }}>
-               <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={agencyData}>
-                     <defs>
-                        <linearGradient id="colorBooking" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                     <Tooltip />
-                     <Area type="monotone" dataKey="booking" stroke="#3b82f6" fillOpacity={1} fill="url(#colorBooking)" strokeWidth={3} />
-                     <Area type="monotone" dataKey="expedia" stroke="#ef4444" fill="transparent" strokeWidth={3} />
-                     <Area type="monotone" dataKey="ets" stroke="#10b981" fill="transparent" strokeWidth={3} />
-                  </AreaChart>
-               </ResponsiveContainer>
-            </div>
-         </section>
+      <div className="cnt-stats">
+        {[
+          { label: 'Aktif Sözleşme', val: 12, color: '#10b981' },
+          { label: 'İnceleme Bekleyen', val: 3, color: '#f59e0b' },
+          { label: 'Süresi Dolanlar', val: 2, color: '#ef4444' },
+          { label: 'Yıllık Hacim', val: '₺4.2M', color: '#3b82f6' },
+        ].map(s => (
+          <div key={s.label} className="s-box">
+            <span className="s-label">{s.label}</span>
+            <strong style={{ color: s.color }}>{s.val}</strong>
+          </div>
+        ))}
+      </div>
 
-         {/* Contract Table */}
-         <section className="card table-card">
-            <div className="section-header">
-               <h3>AKTİF ANLAŞMALAR</h3>
-               <div className="search-box">
-                  <Search size={16} />
-                  <input type="text" placeholder="Acente Ara..." />
-               </div>
-            </div>
-            <table className="contract-table">
-               <thead>
-                  <tr>
-                     <th>Acente</th>
-                     <th>Anlaşma Tipi</th>
-                     <th>Oran/Fiyat</th>
-                     <th>Bitiş Tarihi</th>
-                     <th>Durum</th>
-                     <th></th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {contractList.map((c, idx) => (
-                    <tr key={idx}>
-                       <td><strong>{c.agency}</strong></td>
-                       <td>{c.type}</td>
-                       <td>{c.rate}</td>
-                       <td>{c.expiry}</td>
-                       <td>
-                          <span className={`status-pill ${c.status}`}>
-                             {c.status === 'active' ? 'Aktif' : 'Beklemede'}
-                          </span>
-                       </td>
-                       <td>
-                          <div className="row-actions">
-                             <button className="icon-btn"><Edit size={14}/></button>
-                             <button className="icon-btn"><Download size={14}/></button>
-                             <button className="icon-btn"><MoreVertical size={14}/></button>
-                          </div>
-                       </td>
-                    </tr>
-                  ))}
-               </tbody>
-            </table>
-         </section>
+      <div className="cnt-main">
+        <div className="filters-row">
+          <div className="search-wrap">
+            <Search size={16} color="#94a3b8"/>
+            <input placeholder="Sözleşme veya iş ortağı ara..." />
+          </div>
+          <div className="tabs">
+            {['tümü', 'aktif', 'incelemede', 'süresi_doluyor'].map(t => (
+              <button key={t} className={`t-btn ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
+                {t.charAt(0).toUpperCase() + t.slice(1).replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+        </div>
 
-         {/* Right Sidebar - Promotion Center */}
-         <aside className="promotion-sidebar">
-            <section className="card promo-card">
-               <h3>PROMOSYON & AKSİYONLAR</h3>
-               <div className="promo-list">
-                  <div className="promo-item">
-                     <div className="promo-info">
-                        <strong>7-6 Stay Pay</strong>
-                        <span>7 gece kal 6 öde</span>
-                     </div>
-                     <span className="badge active">AKTİF</span>
-                  </div>
-                  <div className="promo-item">
-                     <div className="promo-info">
-                        <strong>EB %20 Discount</strong>
-                        <span>Erken Rezervasyon</span>
-                     </div>
-                     <span className="badge active">AKTİF</span>
-                  </div>
-                  <div className="promo-item">
-                     <div className="promo-info">
-                        <strong>Child Free</strong>
-                        <span>0-12 Yaş Ücretsiz</span>
-                     </div>
-                     <span className="badge inactive">PASİF</span>
-                  </div>
-               </div>
-               <button className="btn-full primary mt-20">AKSİYON TANIMLA</button>
-            </section>
-         </aside>
+        <div className="cnt-list">
+          {contracts.map((cnt, i) => (
+            <motion.div 
+              key={cnt.id} 
+              className="cnt-row"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <div className="cnt-icon"><FileText size={20}/></div>
+              <div className="cnt-info">
+                <strong>{cnt.name}</strong>
+                <span><Building2 size={12}/> {cnt.partner} · <User size={12}/> {cnt.type}</span>
+              </div>
+              <div className="cnt-period">
+                <Calendar size={13}/>
+                <span>{cnt.date}</span>
+              </div>
+              <div className="cnt-price"><strong>{cnt.price}</strong></div>
+              <div className={`cnt-status ${cnt.status}`}>
+                {cnt.status === 'aktif' ? 'Aktif' : cnt.status === 'incelemede' ? 'İncelemede' : 'Süresi Doluyor'}
+              </div>
+              <div className="cnt-actions">
+                <button className="a-btn"><Eye size={16}/></button>
+                <button className="a-btn"><Download size={16}/></button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       <style>{`
-        .contracts-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 30px;
-        }
+        .cnt-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .cnt-head { display: flex; justify-content: space-between; align-items: center; }
+        .cnt-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .cnt-head span { font-size: 13px; color: #94a3b8; }
+        
+        .btn-primary { padding: 12px 20px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 5px; }
-        .title-section span { font-size: 14px; color: #64748b; }
+        .cnt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .s-box { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 20px; text-align: center; }
+        .s-label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; }
+        .s-box strong { font-size: 24px; font-weight: 900; }
 
-        .actions { display: flex; gap: 15px; }
-        .btn-contract {
-           padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; border: none; transition: all 0.2s;
-        }
-        .btn-contract.primary { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .btn-contract.outline { background: white; border: 1px solid #e2e8f0; color: #475569; }
-        .btn-contract:hover { transform: translateY(-2px); }
+        .cnt-main { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; }
+        .filters-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 20px; }
+        
+        .search-wrap { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+        .search-wrap input { border: none; background: transparent; outline: none; font-size: 13px; color: #475569; width: 100%; }
+        
+        .tabs { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px; }
+        .t-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .t-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .contracts-grid {
-           display: grid;
-           grid-template-columns: 1fr 320px;
-           gap: 30px;
-        }
-
-        .card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .section-header h3 { font-size: 15px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; }
-
-        .chart-legend { display: flex; gap: 20px; }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #94a3b8; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot.blue { background: #3b82f6; }
-        .dot.red { background: #ef4444; }
-        .dot.green { background: #10b981; }
-
-        .search-box {
-           display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 15px; border-radius: 10px; width: 250px;
-        }
-        .search-box input { background: transparent; border: none; outline: none; font-size: 13px; color: #475569; width: 100%; }
-
-        .contract-table { width: 100%; border-collapse: collapse; }
-        .contract-table th { text-align: left; padding: 15px; font-size: 12px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
-        .contract-table td { padding: 20px 15px; font-size: 14px; border-bottom: 1px solid #f8fafc; color: #475569; }
-
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-        .status-pill.active { background: #f0fdf4; color: #10b981; }
-        .status-pill.pending { background: #fff7ed; color: #f97316; }
-
-        .row-actions { display: flex; gap: 8px; }
-        .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #f1f5f9; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; }
-        .icon-btn:hover { background: #f8fafc; color: #3b82f6; }
-
-        .promo-list { display: flex; flex-direction: column; gap: 15px; }
-        .promo-item {
-           display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;
-        }
-        .promo-info strong { display: block; font-size: 14px; color: #1e293b; }
-        .promo-info span { font-size: 12px; color: #94a3b8; }
-        .badge { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
-        .badge.active { background: #ecfdf5; color: #10b981; }
-        .badge.inactive { background: #f1f5f9; color: #94a3b8; }
-
-        .btn-full {
-           width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
-        }
-        .btn-full.primary { background: #1e293b; color: white; }
+        .cnt-list { display: flex; flex-direction: column; gap: 10px; }
+        .cnt-row { display: grid; grid-template-columns: 44px 1fr 180px 150px 120px 80px; align-items: center; gap: 20px; padding: 16px; border-radius: 16px; border: 1.5px solid #f8fafc; transition: 0.2s; }
+        .cnt-row:hover { background: #f8fafc; border-color: #3b82f6; }
+        
+        .cnt-icon { width: 44px; height: 44px; background: #eff6ff; color: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .cnt-info strong { display: block; font-size: 14px; color: #1e293b; }
+        .cnt-info span { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+        
+        .cnt-period { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; font-weight: 600; }
+        .cnt-price strong { font-size: 13px; color: #1e293b; font-weight: 800; }
+        
+        .cnt-status { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-align: center; }
+        .cnt-status.aktif { background: #f0fdf4; color: #10b981; }
+        .cnt-status.incelemede { background: #fffbeb; color: #f59e0b; }
+        .cnt-status.süresi_doluyor { background: #fef2f2; color: #ef4444; }
+        
+        .cnt-actions { display: flex; gap: 8px; }
+        .a-btn { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .a-btn:hover { border-color: #3b82f6; color: #3b82f6; }
       `}</style>
     </div>
   );

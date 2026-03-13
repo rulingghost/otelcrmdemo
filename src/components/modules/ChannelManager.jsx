@@ -1,185 +1,199 @@
 import React, { useState } from 'react';
-import { 
-  Globe, Search, Plus, 
-  Zap, Clock, CheckCircle, 
-  AlertCircle, ChevronRight, 
-  ArrowUpRight, ArrowDownRight,
-  Database, RefreshCw, Filter,
-  ShieldCheck, LayoutGrid, MoreVertical
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Layers, RefreshCw, AlertCircle, CheckCircle, ExternalLink, Shield, Save } from 'lucide-react';
 
-const channels = [
-  { name: 'Booking.com', status: 'ONLINE', rooms: 12 },
-  { name: 'Expedia', status: 'ONLINE', rooms: 8 },
-  { name: 'HotelRunner', status: 'ONLINE', rooms: 15 },
-  { name: 'Web Site', status: 'ONLINE', rooms: 20 },
-];
-
-const matrixData = [
-  { type: 'Standard Oda', dates: ['100 USD', '105 €', '105 €', '105 €', '105 €', '105 €', '105 €'] },
-  { type: 'Deluxe Oda', dates: ['108 USD', '105 €', '105 €', '105 €', '105 €', '105 €', '105 €'] },
-  { type: 'Suite Oda', dates: ['108 USD', '102 €', '102 €', '102 €', '102 €', '102 €', '102 €'] },
-];
-
-const feed = [
-  { channel: 'Booking.com', guest: 'John Doe', time: '+2dk' },
-  { channel: 'Expedia', guest: 'Emma R.', time: '+4dk' },
-  { channel: 'Web Sitesi', guest: 'Tim S.', time: '+6dk' },
-  { channel: 'HotelRunner', guest: 'David M.', time: '+8dk' },
+const CHANNELS = [
+  { id: 'booking', name: 'Booking.com',   status: 'aktif',   sync: '5 dk önce', logo: 'B' },
+  { id: 'expedia', name: 'Expedia',       status: 'aktif',   sync: '2 dk önce', logo: 'E' },
+  { id: 'hotels',  name: 'Hotels.com',    status: 'aktif',   sync: '8 dk önce', logo: 'H' },
+  { id: 'airbnb',  name: 'Airbnb',        status: 'uyarı',   sync: '1 saat önce', logo: 'A' },
+  { id: 'website', name: 'Otel Web Sitesi', status: 'aktif',   sync: 'Anlık',     logo: 'W' },
 ];
 
 const ChannelManager = () => {
+  const { addNotification } = useHotel();
+  const [syncing, setSyncing] = useState(false);
+  const [rates, setRates] = useState({
+    standard: 1850,
+    deluxe: 2400,
+    suite: 4200,
+    family: 3100
+  });
+
+  const handleSyncAll = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      setSyncing(false);
+      addNotification({ type: 'success', msg: 'Tüm kanallar başarıyla güncellendi!' });
+    }, 2000);
+  };
+
+  const updateRate = (type, val) => {
+    setRates(p => ({ ...p, [type]: parseInt(val) || 0 }));
+  };
+
   return (
-    <div className="cm-container">
-      <header className="header">
-         <div className="title-section">
-            <Globe size={32} className="icon-blue"/>
-            <div>
-               <h2>Channel Manager & Online Distribution</h2>
-               <span>Envanter senkronizasyonu, fiyat matrisi ve kanal yönetimi</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">TEK TIKLA STOP SALE</button>
-            <button className="btn outline">FİYAT GÜNCELLE</button>
-            <button className="btn primary red"><AlertCircle size={18}/> KRİTİK HATA BİLDİRİMİ</button>
-         </div>
-      </header>
+    <div className="chan-page">
+      <div className="chan-head">
+        <div>
+          <h2><Layers size={20}/> Kanal Yönetimi (Channel Manager)</h2>
+          <span>OTA fiyat, kontenjan ve durdur/satış (Stop Sale) yönetimi</span>
+        </div>
+        <button 
+          className={`btn-primary ${syncing ? 'syncing' : ''}`} 
+          onClick={handleSyncAll}
+          disabled={syncing}
+        >
+          <RefreshCw size={15} className={syncing ? 'spin' : ''}/> 
+          {syncing ? 'Senkronize Ediliyor...' : 'Tüm Kanalları Güncelle'}
+        </button>
+      </div>
 
-      <div className="cm-grid">
-         {/* Left: Channels */}
-         <aside className="left-panel">
-            <section className="card channels-card">
-               <h3>BAĞLI KANALLAR</h3>
-               <div className="chan-list">
-                  {channels.map((c, i) => (
-                    <div key={i} className="chan-item">
-                       <div className="c-head">
-                          <strong>{c.name}</strong>
-                          <span className="online-badge">ONLINE</span>
-                       </div>
-                       <div className="dots">
-                          {[1,2,3,4].map(d => <div key={d} className="dot"></div>)}
-                       </div>
-                    </div>
-                  ))}
-               </div>
-               <button className="link-btn mt-20">Kategori Yönetimi <ChevronRight size={14}/></button>
-            </section>
-         </aside>
+      <div className="chan-grid">
+        {/* Canallar */}
+        <div className="chan-list">
+          <h3>Bağlı Satış Kanalları</h3>
+          {CHANNELS.map((ch, i) => (
+            <motion.div 
+              key={ch.id} 
+              className={`chan-card ${ch.status}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <div className="ch-logo">{ch.logo}</div>
+              <div className="ch-info">
+                <strong>{ch.name}</strong>
+                <span>Son Senk: {ch.sync}</span>
+              </div>
+              <div className={`ch-status ${ch.status}`}>
+                {ch.status === 'aktif' ? <CheckCircle size={14}/> : <AlertCircle size={14}/>}
+                {ch.status === 'aktif' ? 'Bağlantı Tamam' : 'Senkronizasyon Hatası'}
+              </div>
+              <button className="ch-btn"><ExternalLink size={14}/></button>
+            </motion.div>
+          ))}
+          <button className="add-chan"><Plus size={14}/> Yeni Kanal Bağla</button>
+        </div>
 
-         {/* Center: Inventory Matrix */}
-         <section className="main-content">
-            <div className="card matrix-card">
-               <div className="m-head">
-                  <h3>ENVANTER & FİYAT MATRİSİ</h3>
-                  <div className="status-sync">SON SENKRONİZASYON: 12 saniye önce</div>
-               </div>
-               <table className="matrix-table">
-                  <thead>
-                     <tr>
-                        <th>Kat Tür</th>
-                        <th>24 Nisan</th>
-                        <th>25 Pd</th>
-                        <th>26 Sul</th>
-                        <th>1 Pd</th>
-                        <th>4 Brs</th>
-                        <th>5 Cd</th>
-                        <th>6 Cd</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {matrixData.map((row, i) => (
-                       <tr key={i}>
-                          <td><strong>{row.type}</strong></td>
-                          {row.dates.map((d, di) => (
-                            <td key={di} className="price-cell">
-                               {d}
-                               <span className="trend pos">+5</span>
-                            </td>
-                          ))}
-                       </tr>
-                     ))}
-                  </tbody>
-               </table>
+        {/* Fiyat Yönetimi */}
+        <div className="chan-main">
+          <div className="rate-card">
+            <div className="rc-head">
+              <h3>Genel Fiyat Dağıtımı</h3>
+              <p>Burada yapılan değişiklikler tüm aktif kanallara anında yansıtılır.</p>
             </div>
             
-            <div className="cm-footer mt-20">
-               <span>GÜNLÜK ONLINE CİRO: <strong>$12,400</strong></span>
+            <div className="rate-grid">
+              {Object.entries(rates).map(([type, price]) => (
+                <div key={type} className="rate-item">
+                  <label>{type.toUpperCase()} ODA</label>
+                  <div className="price-input">
+                    <span>₺</span>
+                    <input 
+                      type="number" 
+                      value={price} 
+                      onChange={(e) => updateRate(type, e.target.value)}
+                    />
+                  </div>
+                  <div className="rate-meta">
+                    <span>Önceki: ₺{(price * 0.95).toFixed(0)}</span>
+                    <span className="plus">+%5</span>
+                  </div>
+                </div>
+              ))}
             </div>
-         </section>
 
-         {/* Right: Booking Feed */}
-         <aside className="right-panel">
-            <section className="card feed-card">
-               <h3>ANLIK REZERVASYON AKIŞI</h3>
-               <div className="f-list">
-                  {feed.map((f, i) => (
-                    <div key={i} className="f-item">
-                       <div className="f-info">
-                          <div className="f-chan">{f.channel}</div>
-                          <strong>{f.guest}</strong>
-                       </div>
-                       <span className="f-time">{f.time}</span>
+            <div className="stop-sale-section">
+              <h3><Shield size={16}/> Satış Durdurma (Stop Sale)</h3>
+              <div className="stop-grid">
+                {['Single', 'Double', 'Triple'].map(t => (
+                  <div key={t} className="stop-item">
+                    <span>{t} Odalar</span>
+                    <div className="toggle">
+                      <input type="checkbox" id={`stop-${t}`} />
+                      <label htmlFor={`stop-${t}`}></label>
                     </div>
-                  ))}
-               </div>
-            </section>
-         </aside>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rc-foot">
+              <button className="btn-save"><Save size={15}/> Değişiklikleri Kanallara Gönder</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style>{`
-        .cm-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
+        .chan-page { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+        .chan-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .chan-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .chan-head span { font-size: 13px; color: #94a3b8; }
+        
+        .btn-primary { padding: 12px 20px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from {transform: rotate(0deg)} to {transform: rotate(360deg)} }
 
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
+        .chan-grid { display: grid; grid-template-columns: 350px 1fr; gap: 24px; }
+        
+        .chan-list { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .chan-list h3 { font-size: 14px; font-weight: 800; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
+        
+        .chan-card { padding: 16px; border-radius: 15px; border: 1.5px solid #f1f5f9; display: flex; align-items: center; gap: 14px; transition: 0.2s; }
+        .chan-card:hover { border-color: #3b82f6; background: #f8fafc; }
+        .ch-logo { width: 40px; height: 40px; background: #1e293b; color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; }
+        .ch-info { flex: 1; }
+        .ch-info strong { display: block; font-size: 14px; color: #1e293b; }
+        .ch-info span { font-size: 11px; color: #94a3b8; }
+        .ch-status { font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; }
+        .ch-status.aktif { background: #f0fdf4; color: #10b981; }
+        .ch-status.uyarı { background: #fef2f2; color: #ef4444; }
+        .ch-btn { background: transparent; border: none; color: #cbd5e1; cursor: pointer; padding: 5px; }
+        .ch-btn:hover { color: #3b82f6; }
+        
+        .add-chan { margin-top: 10px; border: 2px dashed #e2e8f0; background: transparent; padding: 12px; border-radius: 12px; color: #94a3b8; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .add-chan:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
 
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-        .btn.primary.red { background: #ef4444; color: white; display: flex; align-items: center; gap: 10px; }
+        .chan-main { display: flex; flex-direction: column; gap: 20px; }
+        .rate-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 24px; }
+        .rc-head { margin-bottom: 24px; }
+        .rc-head h3 { font-size: 18px; font-weight: 800; color: #1e293b; }
+        .rc-head p { font-size: 13px; color: #94a3b8; }
+        
+        .rate-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 30px; }
+        .rate-item { background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #f1f5f9; }
+        .rate-item label { display: block; font-size: 10px; font-weight: 800; color: #64748b; margin-bottom: 8px; }
+        .price-input { display: flex; align-items: center; gap: 8px; position: relative; }
+        .price-input span { font-size: 18px; font-weight: 800; color: #1e293b; }
+        .price-input input { background: transparent; border: none; font-size: 24px; font-weight: 900; color: #3b82f6; width: 100%; outline: none; }
+        .rate-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; font-weight: 700; color: #94a3b8; }
+        .rate-meta .plus { color: #10b981; }
 
-        .cm-grid { display: grid; grid-template-columns: 240px 1fr 280px; gap: 30px; }
+        .stop-sale-section { border-top: 1px solid #f1f5f9; padding-top: 24px; margin-bottom: 24px; }
+        .stop-sale-section h3 { font-size: 14px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .stop-grid { display: flex; gap: 20px; }
+        .stop-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #f8fafc; border-radius: 12px; font-size: 13px; font-weight: 700; color: #64748b; }
+        
+        .toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .toggle input { display: none; }
+        .toggle label { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .toggle label:before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .toggle input:checked + label { background-color: #ef4444; }
+        .toggle input:checked + label:before { transform: translateX(18px); }
 
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 13px; font-weight: 900; color: #1e293b; margin-bottom: 20px; letter-spacing: 0.5px; }
-
-        .chan-item { padding: 15px; border-bottom: 1px solid #f1f5f9; }
-        .online-badge { font-size: 9px; font-weight: 900; color: #10b981; margin-left: 10px; }
-        .dots { display: flex; gap: 4px; margin-top: 8px; }
-        .dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; opacity: 0.5; }
-
-        .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .status-sync { font-size: 11px; color: #94a3b8; font-weight: 700; }
-
-        .matrix-table { width: 100%; border-collapse: collapse; }
-        .matrix-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
-        .matrix-table td { padding: 15px 12px; font-size: 13px; border-bottom: 1px solid #f8fafc; color: #475569; position: relative; }
-        .price-cell { font-family: monospace; font-weight: 700; }
-        .trend { font-size: 10px; position: absolute; top: 5px; right: 5px; }
-        .trend.pos { color: #10b981; }
-
-        .f-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8fafc; }
-        .f-info { display: flex; flex-direction: column; }
-        .f-chan { font-size: 10px; font-weight: 900; color: #3b82f6; text-transform: uppercase; }
-        .f-info strong { font-size: 12px; color: #1e293b; }
-        .f-time { font-size: 11px; color: #94a3b8; font-weight: 700; }
-
-        .link-btn { border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .mt-20 { margin-top: 20px; }
+        .btn-save { width: 100%; padding: 16px; border: none; background: #1e293b; color: white; border-radius: 15px; font-weight: 800; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .btn-save:hover { background: #3b82f6; transform: translateY(-2px); }
       `}</style>
     </div>
   );
 };
+
+const Plus = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
 
 export default ChannelManager;

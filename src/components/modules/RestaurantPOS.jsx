@@ -1,266 +1,235 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Utensils, Search, Plus, 
-  Table as TableIcon, CreditCard, Banknote,
-  Clock, CheckCircle, ChevronRight,
-  Printer, Trash2, Edit2, ShoppingBag,
-  User, DollarSign, Filter,
-  LayoutGrid, Grid, Layers, X,
-  AlertTriangle, Smartphone, Monitor,
-  History, Info
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { useHotel } from '../../context/HotelContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Plus, Minus, ShoppingCart, X, CheckCircle,
+  CreditCard, Coffee, Utensils, Wine, Dessert,
+  Search, Printer, DollarSign
+} from 'lucide-react';
 
-const tables = [
-  { id: 'A-01', status: 'occupied', seats: 4, amount: '₺ 1,240', time: '45 dk' },
-  { id: 'A-02', status: 'available', seats: 2, amount: '-', time: '-' },
-  { id: 'A-03', status: 'reserved', seats: 6, amount: '-', time: '19:00' },
-  { id: 'B-01', status: 'occupied', seats: 4, amount: '₺ 850', time: '12 dk' },
-  { id: 'B-02', status: 'dirty', seats: 4, amount: '-', time: '-' },
-  { id: 'B-03', status: 'occupied', seats: 2, amount: '₺ 420', time: '60 dk' },
-  { id: 'C-01', status: 'available', seats: 8, amount: '-', time: '-' },
-  { id: 'C-02', status: 'available', seats: 4, amount: '-', time: '-' },
-];
-
-const menuItems = [
-  { id: 1, name: 'Izgara Köfte', price: 340, category: 'Ana Yemek', img: '🥩', recipe: 'OK' },
-  { id: 2, name: 'Mercimek Çorbası', price: 120, category: 'Başlangıç', img: '🥣', recipe: 'OK' },
-  { id: 3, name: 'Sezar Salata', price: 210, category: 'Salatalar', img: '🥗', recipe: 'Warn' },
-  { id: 4, name: 'Tiramisu', price: 180, category: 'Tatlılar', img: '🍰', recipe: 'OK' },
-  { id: 5, name: 'Coca Cola', price: 65, category: 'İçecekler', img: '🥤', recipe: 'OK' },
-  { id: 6, name: 'Kuzu Pirzola', price: 480, category: 'Ana Yemek', img: '🍖', recipe: 'OK' },
+const MENU = [
+  // Kategoriler
+  { cat:'Kahvaltı', items:[
+    { id:'FD-01', name:'Açık Büfe Kahvaltı',  price:280, emoji:'🍳' },
+    { id:'FD-02', name:'Fransız Toast',        price:120, emoji:'🍞' },
+    { id:'FD-03', name:'Yumurta Benedict',     price:150, emoji:'🥚' },
+    { id:'FD-04', name:'Granola & Yoğurt',     price:95,  emoji:'🥣' },
+  ]},
+  { cat:'Ana Yemek', items:[
+    { id:'FD-05', name:'Izgara Somon',         price:380, emoji:'🐟' },
+    { id:'FD-06', name:'Dana Biftek',          price:560, emoji:'🥩' },
+    { id:'FD-07', name:'Tavuk Şiş',            price:220, emoji:'🍢' },
+    { id:'FD-08', name:'Sebze Risotto',        price:180, emoji:'🍚' },
+    { id:'FD-09', name:'Kuzu Tandır',          price:480, emoji:'🍖' },
+  ]},
+  { cat:'İçecekler', items:[
+    { id:'FD-10', name:'Türk Çayı',            price:25,  emoji:'🫖' },
+    { id:'FD-11', name:'Taze Sıkılmış Portakal',price:65, emoji:'🍊' },
+    { id:'FD-12', name:'Kahve (Espresso)',      price:55,  emoji:'☕' },
+    { id:'FD-13', name:'Su (500ml)',            price:15,  emoji:'💧' },
+    { id:'FD-14', name:'Şarap (Bardak)',        price:180, emoji:'🍷' },
+  ]},
+  { cat:'Tatlılar', items:[
+    { id:'FD-15', name:'Baklava Tabağı',       price:120, emoji:'🍯' },
+    { id:'FD-16', name:'Cheesecake',           price:95,  emoji:'🍰' },
+    { id:'FD-17', name:'Dondurma (2 Top)',     price:75,  emoji:'🍨' },
+  ]},
 ];
 
 const RestaurantPOS = () => {
-  const [view, setView] = useState('tables'); // 'tables' or 'order'
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [cart, setCart] = useState([]);
+  const { reservations, addFolioLine, addCashTransaction, addNotification } = useHotel();
+  const [activeCat, setActiveCat]   = useState('Kahvaltı');
+  const [cart, setCart]             = useState([]);
+  const [search, setSearch]         = useState('');
+  const [orderMode, setOrderMode]   = useState('masa'); // 'masa' or 'oda'
+  const [tableNo, setTableNo]       = useState('');
+  const [selectedRes, setSelectedRes] = useState('');
+  const [payMethod, setPayMethod]   = useState('Nakit');
+  const [success, setSuccess]       = useState(false);
+
+  const inHouse = reservations.filter(r=>r.status==='check-in');
+
+  const catItems = activeCat==='hepsi'
+    ? MENU.flatMap(c=>c.items)
+    : MENU.find(c=>c.cat===activeCat)?.items || [];
+
+  const filteredItems = search
+    ? MENU.flatMap(c=>c.items).filter(i=>i.name.toLowerCase().includes(search.toLowerCase()))
+    : catItems;
 
   const addToCart = (item) => {
-    const existing = cart.find(c => c.id === item.id);
-    if (existing) {
-      setCart(cart.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c));
-    } else {
-      setCart([...cart, { ...item, qty: 1 }]);
-    }
+    setCart(prev => {
+      const ex = prev.find(c=>c.id===item.id);
+      if (ex) return prev.map(c=>c.id===item.id?{...c,qty:c.qty+1}:c);
+      return [...prev, {...item, qty:1}];
+    });
   };
 
-  const total = cart.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
+  const changeQty = (id, delta) => {
+    setCart(prev => prev.map(c=>c.id===id?{...c,qty:c.qty+delta}:c).filter(c=>c.qty>0));
+  };
+
+  const total = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const itemCount = cart.reduce((s,c)=>s+c.qty,0);
+
+  const handleOrder = () => {
+    if (cart.length===0) return;
+    if (orderMode==='oda' && selectedRes) {
+      addFolioLine(selectedRes, {
+        desc: `Restoran Siparişi (${cart.map(c=>`${c.name} ×${c.qty}`).join(', ')})`,
+        amount: total, type: 'extra'
+      });
+    } else {
+      addCashTransaction({ type:'gelir', desc:`Restoran — Masa ${tableNo||'?'} (${cart.length} kalem)`, amount:total, method:payMethod });
+    }
+    addNotification({ type:'success', msg:`Sipariş tamamlandı — ₺${total.toLocaleString()}` });
+    setSuccess(true);
+    setTimeout(()=>{ setSuccess(false); setCart([]); setTableNo(''); }, 1800);
+  };
 
   return (
-    <div className="pos-container">
-      <header className="pos-header">
-         <div className="title-section">
-            <Utensils size={32} className="icon-blue"/>
-            <div>
-               <h2>A'la Carte & POS Terminali</h2>
-               <span>Masa yönetimi, adisyon ve oda kredilendirme merkezi</span>
-            </div>
-         </div>
-         <div className="header-actions">
-            <div className="pos-mode">
-               <button className={view === 'tables' ? 'active' : ''} onClick={() => setView('tables')}><LayoutGrid size={18}/> MASA PLANI</button>
-               <button className={view === 'order' ? 'active' : ''} onClick={() => setView('order')}><History size={18}/> ADİSYON (KDS)</button>
-            </div>
-            <button className="btn-pos primary"><Printer size={18}/> RAPOR AL</button>
-         </div>
-      </header>
-
-      {view === 'tables' ? (
-        <div className="tables-grid">
-           {tables.map(table => (
-             <motion.div 
-               key={table.id} 
-               className={`table-card ${table.status}`}
-               whileHover={{ scale: 1.02 }}
-               onClick={() => { setSelectedTable(table); setView('order'); }}
-             >
-                <div className="t-head">
-                   <strong>{table.id}</strong>
-                   <span className="seats">{table.seats} Kişilik</span>
-                </div>
-                <div className="t-body">
-                   {table.status === 'occupied' ? (
-                     <>
-                        <div className="t-amount">{table.amount}</div>
-                        <div className="t-time"><Clock size={12}/> {table.time}</div>
-                     </>
-                   ) : table.status === 'reserved' ? (
-                     <div className="t-reserved">REZERVE: {table.time}</div>
-                   ) : (
-                     <div className="t-status">{table.status.toUpperCase()}</div>
-                   )}
-                </div>
-                {table.status === 'occupied' && <div className="t-indicator"></div>}
-             </motion.div>
-           ))}
+    <div className="pos-layout">
+      {/* Left: Menu */}
+      <div className="pos-menu">
+        <div className="pos-search">
+          <Search size={15}/><input placeholder="Ürün ara..." value={search} onChange={e=>setSearch(e.target.value)}/>
         </div>
-      ) : (
-        <div className="order-grid">
-           {/* Left - Menu Selection */}
-           <main className="menu-section">
-              <div className="menu-header">
-                 <div className="table-tag">
-                    <TableIcon size={16}/> MASA: <strong>{selectedTable?.id || 'Hızlı-Satış'}</strong>
-                 </div>
-                 <div className="search-box">
-                    <Search size={18}/>
-                    <input type="text" placeholder="Ürün veya kategori ara..." />
-                 </div>
-              </div>
-              
-              <div className="menu-items">
-                 {menuItems.map(item => (
-                   <motion.div 
-                     key={item.id} 
-                     className="menu-card"
-                     whileTap={{ scale: 0.95 }}
-                     onClick={() => addToCart(item)}
-                   >
-                      <div className="item-img">{item.img}</div>
-                      <div className="item-info">
-                         <span className="name">{item.name}</span>
-                         <span className="price">₺{item.price}</span>
-                      </div>
-                      {item.recipe === 'Warn' && <div className="recipe-warn" title="Kritik Stok!"><AlertTriangle size={12}/></div>}
-                   </motion.div>
-                 ))}
-              </div>
-           </main>
-
-           {/* Right - Live Bill / Adisyon */}
-           <aside className="bill-section card">
-              <div className="bill-header">
-                 <h3>ADİSYON DETAYI</h3>
-                 <span className="guest-info">Misafir: <strong>Oda 302</strong></span>
-              </div>
-              
-              <div className="bill-items">
-                 <AnimatePresence>
-                    {cart.map(item => (
-                      <motion.div 
-                        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                        key={item.id} className="bill-item"
-                      >
-                         <div className="qty">{item.qty}x</div>
-                         <div className="details">
-                            <strong>{item.name}</strong>
-                            <span>Adet: ₺{item.price}</span>
-                         </div>
-                         <div className="amount">₺{item.price * item.qty}</div>
-                         <button className="del-btn" onClick={() => setCart(cart.filter(c => c.id !== item.id))}><X size={14}/></button>
-                      </motion.div>
-                    ))}
-                 </AnimatePresence>
-                 {cart.length === 0 && (
-                   <div className="empty-bill">
-                      <Utensils size={48} className="gray"/>
-                      <p>Sipariş bekleniyor...</p>
-                   </div>
-                 )}
-              </div>
-
-              <div className="bill-footer">
-                 <div className="total-lines">
-                    <div className="line"><span>Ara Toplam</span><strong>₺{total}</strong></div>
-                    <div className="line"><span>KDV (%10)</span><strong>₺{Math.round(total * 0.1)}</strong></div>
-                    <div className="line total"><span>GENEL TOPLAM</span><strong>₺{Math.round(total * 1.1)}</strong></div>
-                 </div>
-                 
-                 <div className="pay-options">
-                    <button className="btn-pay room"><User size={18}/> ODAYA YAZ</button>
-                    <button className="btn-pay cash"><Banknote size={18}/> NAKİT / KK</button>
-                 </div>
-                 <div className="quick-actions">
-                    <button className="qa-btn"><Layers size={16}/> Hesap Böl</button>
-                    <button className="qa-btn"><Printer size={16}/> İkram</button>
-                 </div>
-              </div>
-           </aside>
+        {!search && (
+          <div className="cat-tabs">
+            {MENU.map(c=>(
+              <button key={c.cat} className={`cat-btn ${activeCat===c.cat?'active':''}`} onClick={()=>setActiveCat(c.cat)}>
+                {c.cat}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="menu-items">
+          {filteredItems.map(item=>(
+            <motion.button key={item.id} className="menu-item" onClick={()=>addToCart(item)} whileHover={{scale:1.03}}>
+              <div className="mi-emoji">{item.emoji}</div>
+              <div className="mi-info"><strong>{item.name}</strong></div>
+              <div className="mi-price">₺{item.price}</div>
+              {cart.find(c=>c.id===item.id) && (
+                <div className="mi-badge">{cart.find(c=>c.id===item.id)?.qty}</div>
+              )}
+            </motion.button>
+          ))}
         </div>
-      )}
+      </div>
+
+      {/* Right: Cart */}
+      <div className="pos-cart">
+        <div className="cart-head">
+          <h3><ShoppingCart size={18}/> Sipariş</h3>
+          {cart.length>0 && <button className="clear-btn" onClick={()=>setCart([])}>Temizle</button>}
+        </div>
+
+        <div className="order-mode">
+          <button className={orderMode==='masa'?'active':''} onClick={()=>setOrderMode('masa')}>Masa Siparişi</button>
+          <button className={orderMode==='oda'?'active':''} onClick={()=>setOrderMode('oda')}>Odaya Yaz</button>
+        </div>
+
+        {orderMode==='masa' && (
+          <input className="table-input" placeholder="Masa numarası..." value={tableNo} onChange={e=>setTableNo(e.target.value)}/>
+        )}
+        {orderMode==='oda' && (
+          <select className="table-input" value={selectedRes} onChange={e=>setSelectedRes(e.target.value)}>
+            <option value="">Oda seçin</option>
+            {inHouse.map(r=><option key={r.id} value={r.id}>Oda {r.room} — {r.guest}</option>)}
+          </select>
+        )}
+
+        {/* Cart items */}
+        <div className="cart-items">
+          <AnimatePresence>
+            {cart.map(item=>(
+              <motion.div key={item.id} className="cart-item" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:20}}>
+                <span className="ci-emoji">{item.emoji}</span>
+                <div className="ci-info">
+                  <strong>{item.name}</strong>
+                  <span>₺{(item.price*item.qty).toLocaleString()}</span>
+                </div>
+                <div className="qty-ctrl">
+                  <button onClick={()=>changeQty(item.id,-1)}><Minus size={12}/></button>
+                  <span>{item.qty}</span>
+                  <button onClick={()=>changeQty(item.id,+1)}><Plus size={12}/></button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {cart.length===0 && <div className="empty-cart">Henüz ürün eklenmedi</div>}
+        </div>
+
+        {/* Total + Pay */}
+        {cart.length>0 && (
+          <div className="cart-footer">
+            <div className="cart-total">
+              <span>{itemCount} ürün</span>
+              <strong>₺{total.toLocaleString()}</strong>
+            </div>
+            {orderMode==='masa' && (
+              <div className="pay-methods">
+                {['Nakit','Kredi Kartı'].map(m=>(
+                  <button key={m} className={payMethod===m?'active':''} onClick={()=>setPayMethod(m)}>{m}</button>
+                ))}
+              </div>
+            )}
+            {success ? (
+              <div className="order-success"><CheckCircle size={20} color="#10b981"/> Sipariş Tamamlandı!</div>
+            ) : (
+              <button className="order-btn" onClick={handleOrder} disabled={orderMode==='oda'&&!selectedRes}>
+                {orderMode==='oda' ? '📋 Odaya Faturala' : '💳 Ödeme Al — ₺' + total.toLocaleString()}
+              </button>
+            )}
+            <button className="print-btn"><Printer size={14}/> Fiş Yazdır</button>
+          </div>
+        )}
+      </div>
 
       <style>{`
-        .pos-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
+        .pos-layout { display:flex; height:calc(100vh - 70px); }
+        .pos-menu { flex:1; display:flex; flex-direction:column; padding:18px; gap:12px; overflow:hidden; }
+        .pos-search { display:flex; align-items:center; gap:8px; background:white; border:1.5px solid #e2e8f0; padding:10px 14px; border-radius:12px; }
+        .pos-search input { border:none; background:transparent; outline:none; font-size:13px; width:100%; }
+        .cat-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+        .cat-btn { padding:8px 16px; border-radius:10px; border:1.5px solid #e2e8f0; background:white; font-size:13px; font-weight:700; color:#64748b; cursor:pointer; }
+        .cat-btn.active { background:#1e293b; color:white; border-color:#1e293b; }
+        .menu-items { flex:1; display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px; overflow-y:auto; align-content:start; }
+        .menu-item { position:relative; background:white; border:1.5px solid #e2e8f0; border-radius:16px; padding:16px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; transition:0.15s; }
+        .menu-item:hover { border-color:#3b82f6; background:#f8fbff; }
+        .mi-emoji { font-size:28px; }
+        .mi-info strong { font-size:12px; color:#1e293b; font-weight:700; text-align:center; }
+        .mi-price { font-size:14px; font-weight:900; color:#3b82f6; }
+        .mi-badge { position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:900; display:flex; align-items:center; justify-content:center; }
 
-        .pos-header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .header-actions { display: flex; gap: 20px; }
-        .pos-mode { display: flex; background: white; padding: 6px; border-radius: 14px; border: 1px solid #e2e8f0; }
-        .pos-mode button { border: none; background: transparent; padding: 10px 15px; border-radius: 10px; font-size: 13px; font-weight: 800; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .pos-mode button.active { background: #3b82f6; color: white; }
-
-        .btn-pos.primary { background: #1e293b; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-
-        /* Table Grid */
-        .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 25px; }
-        .table-card { background: white; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0; cursor: pointer; position: relative; transition: 0.2s; }
-        .table-card.occupied { border-color: #3b82f6; border-left: 6px solid #3b82f6; }
-        .table-card.available { border-color: #10b981; opacity: 0.8; }
-        .table-card.reserved { background: #fffcf0; border-color: #f59e0b; }
-        .table-card.dirty { background: #fef2f2; border-color: #ef4444; border-style: dashed; }
-        
-        .t-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .t-head strong { font-size: 18px; color: #1e293b; }
-        .seats { font-size: 11px; font-weight: 800; color: #94a3b8; }
-        .t-amount { font-size: 20px; font-weight: 900; color: #3b82f6; margin-bottom: 5px; }
-        .t-time { font-size: 12px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-        .t-indicator { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px #3b82f6; animation: blink 2s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        /* Order View */
-        .order-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
-        .menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .table-tag { background: #1e293b; color: white; padding: 10px 20px; border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-        .search-box { background: white; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; width: 300px; }
-        .search-box input { border: none; outline: none; width: 100%; font-size: 14px; }
-
-        .menu-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
-        .menu-card { background: white; border-radius: 18px; border: 1px solid #e2e8f0; padding: 20px; text-align: center; cursor: pointer; position: relative; }
-        .item-img { font-size: 32px; margin-bottom: 12px; }
-        .item-info .name { display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
-        .item-info .price { font-size: 15px; font-weight: 900; color: #3b82f6; }
-        .recipe-warn { position: absolute; top: 10px; right: 10px; color: #f59e0b; }
-
-        .bill-section { display: flex; flex-direction: column; background: white; height: 100%; }
-        .bill-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px dashed #f1f5f9; padding-bottom: 15px; }
-        .bill-header h3 { font-size: 14px; font-weight: 900; }
-        .guest-info { font-size: 12px; color: #64748b; }
-
-        .bill-items { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bill-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8fafc; border-radius: 10px; position: relative; }
-        .qty { font-weight: 900; color: #3b82f6; width: 30px; }
-        .details { flex: 1; }
-        .details strong { display: block; font-size: 13px; color: #1e293b; }
-        .details span { font-size: 11px; color: #94a3b8; }
-        .amount { font-weight: 800; color: #1e293b; }
-        .del-btn { background: transparent; border: none; color: #cbd5e1; cursor: pointer; }
-
-        .bill-footer { padding-top: 20px; border-top: 2px dashed #f1f5f9; margin-top: 20px; }
-        .line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #64748b; }
-        .line.total { border-top: 1px solid #f1f5f9; padding-top: 12px; font-size: 18px; color: #10b981; font-weight: 900; }
-        
-        .pay-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn-pay { border: none; padding: 15px; border-radius: 12px; color: white; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .btn-pay.room { background: #f59e0b; }
-        .btn-pay.cash { background: #10b981; }
-
-        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .qa-btn { background: #f1f5f9; border: none; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-        .gray { color: #cbd5e1; }
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 30px; }
-        .empty-bill { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; opacity: 0.5; }
+        .pos-cart { width:320px; background:white; border-left:1px solid #e2e8f0; display:flex; flex-direction:column; padding:16px; gap:12px; }
+        .cart-head { display:flex; justify-content:space-between; align-items:center; }
+        .cart-head h3 { font-size:15px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px; }
+        .clear-btn { font-size:11px; color:#ef4444; background:transparent; border:none; cursor:pointer; font-weight:700; }
+        .order-mode { display:flex; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+        .order-mode button { flex:1; padding:9px; border:none; background:white; font-size:12px; font-weight:700; color:#64748b; cursor:pointer; }
+        .order-mode button.active { background:#1e293b; color:white; }
+        .table-input { padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; outline:none; width:100%; }
+        .cart-items { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+        .cart-item { display:flex; align-items:center; gap:10px; padding:12px; background:#f8fafc; border-radius:12px; }
+        .ci-emoji { font-size:22px; flex-shrink:0; }
+        .ci-info { flex:1; }
+        .ci-info strong { display:block; font-size:12px; color:#1e293b; font-weight:700; }
+        .ci-info span { font-size:12px; color:#3b82f6; font-weight:700; }
+        .qty-ctrl { display:flex; align-items:center; gap:6px; }
+        .qty-ctrl button { width:24px; height:24px; border-radius:50%; border:1.5px solid #e2e8f0; background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .qty-ctrl span { font-size:14px; font-weight:900; color:#1e293b; width:20px; text-align:center; }
+        .empty-cart { text-align:center; color:#94a3b8; font-size:13px; padding:30px 0; }
+        .cart-footer { display:flex; flex-direction:column; gap:10px; border-top:1px solid #f1f5f9; padding-top:12px; }
+        .cart-total { display:flex; justify-content:space-between; font-size:14px; font-weight:700; }
+        .cart-total strong { font-size:20px; font-weight:900; color:#1e293b; }
+        .pay-methods { display:flex; gap:8px; }
+        .pay-methods button { flex:1; padding:8px; border:1.5px solid #e2e8f0; background:white; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; }
+        .pay-methods button.active { background:#1e293b; color:white; border-color:#1e293b; }
+        .order-btn { padding:14px; border-radius:12px; border:none; background:#3b82f6; color:white; font-size:13px; font-weight:800; cursor:pointer; }
+        .order-btn:disabled { opacity:.5; cursor:not-allowed; }
+        .order-success { display:flex; align-items:center; justify-content:center; gap:8px; color:#10b981; font-weight:800; padding:12px; background:#f0fdf4; border-radius:10px; }
+        .print-btn { padding:10px; border-radius:10px; border:1.5px solid #e2e8f0; background:white; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; color:#64748b; }
       `}</style>
     </div>
   );

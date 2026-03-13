@@ -1,260 +1,212 @@
 import React, { useState } from 'react';
+import { useHotel } from '../../context/HotelContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  BarChart3, TrendingUp, Star,
-  Search, Plus, Filter,
-  CheckCircle, AlertCircle, ChevronRight,
-  MoreVertical, FileText, LayoutGrid,
-  Bell, User, ThumbsUp, ThumbsDown,
-  Activity, MessageSquare, Globe,
-  ShieldCheck, ArrowUpRight
+  ClipboardCheck, BarChart3, MessageCircle, Star, 
+  ThumbsUp, ThumbsDown, Send, Filter, Download, MoreHorizontal
 } from 'lucide-react';
-import { 
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid
-} from 'recharts';
-import { motion } from 'framer-motion';
-
-const trendData = [
-  { name: 'Jun', hk: 4.2, fb: 4.0, fo: 3.8 },
-  { name: 'Jul', hk: 4.4, fb: 4.1, fo: 4.0 },
-  { name: 'Aug', hk: 4.3, fb: 4.3, fo: 4.2 },
-  { name: 'Sep', hk: 4.6, fb: 4.5, fo: 4.4 },
-  { name: 'Oct', hk: 4.8, fb: 4.6, fo: 4.5 },
-];
-
-const reviews = [
-  { guest: 'Emma Thompson', room: '215', date: 'Sep 12, 14:30', score: 5, text: 'Exceptional stay! Room was spotless and breakfast amazing.', avatar: 'ET' },
-  { guest: 'Liam Rodriguez', room: '402', date: 'Sep 11, 09:15', score: 4, text: 'Good experience, but AC was a bit noisy.', avatar: 'LR' },
-  { guest: 'Sophia Nguyen', room: '118', date: 'Sep 10, 18:45', score: 5, text: 'Wonderful spa treatment and friendly staff.', avatar: 'SN' },
-  { guest: 'Noah Wilson', room: 'Rest.', date: 'Sep 09, 20:20', score: 4, text: 'Dinner was delicious, service slow.', avatar: 'NW' },
-];
-
-const complaints = [
-  { type: 'POSITIVE', room: '2011', issue: 'AC not working', time: '3h ago', status: 'neutral' },
-  { type: 'NEUTRAL', room: '202', issue: 'TV remote not responding', time: '5h ago', status: 'neutral' },
-  { type: 'EaAt', room: '311', issue: 'Dripping faucet', time: '6h ago', status: 'critical' },
-  { type: 'NORMAL', room: '311', issue: 'Minibar empty', time: '8h ago', status: 'normal' },
-];
 
 const Surveys = () => {
+  const { addNotification } = useHotel();
+  const [filter, setFilter] = useState('tümü');
+
+  const stats = [
+    { label: 'Genel Memnuniyet', value: '%92', trend: '+2.1%', icon: <Star size={20} color="#f59e0b"/> },
+    { label: 'Personel Davranışı', value: '4.8/5', trend: '+0.5%', icon: <ThumbsUp size={20} color="#10b981"/> },
+    { label: 'Oda Temizliği', value: '4.7/5', trend: '+1.2%', icon: <ClipboardCheck size={20} color="#3b82f6"/> },
+    { label: 'Yemek Kalitesi', value: '4.5/5', trend: '-0.3%', icon: <BarChart3 size={20} color="#8b5cf6"/> },
+  ];
+
+  const feedbackList = [
+    { id: 1, guest: 'Ahmet Yılmaz', room: '101', score: 5, comment: 'Her şey mükemmeldi, personel çok güler yüzlü.', date: '2 saat önce', cat: 'Genel' },
+    { id: 2, guest: 'Sarah Johnson', room: '205', score: 4, comment: 'Kahvaltı çeşitleri artırılabilir ama oda çok temizdi.', date: '5 saat önce', cat: 'Yemek' },
+    { id: 3, guest: 'Klaus Weber', room: '304', score: 2, comment: 'Sıcak su gelmesi biraz vakit alıyor, teknik servis bakabilir.', date: '1 gün önce', cat: 'Teknik' },
+    { id: 4, guest: 'Ayşe Demir', room: '108', score: 5, comment: 'SPA hizmetlerinden çok memnun kaldım.', date: '2 gün önce', cat: 'SPA' },
+  ];
+
   return (
-    <div className="survey-container">
-      <header className="header">
-         <div className="title-section">
-            <BarChart3 size={32} className="icon-blue"/>
-            <div>
-               <h2>Guest Feedback & Quality Management</h2>
-               <span>Misafir memnuniyeti, anket analizleri ve şikayet yönetimi</span>
+    <div className="sur-page">
+      <div className="sur-head">
+        <div>
+          <h2><ClipboardCheck size={20}/> Anket & Geri Bildirim Yönetimi</h2>
+          <span>Misafir deneyimi analizi ve iyileştirme takibi</span>
+        </div>
+        <div className="head-actions">
+          <button className="btn-secondary"><Download size={14}/> Rapor İndir</button>
+          <button className="btn-primary" onClick={() => addNotification({ type: 'info', msg: 'Yeni anket formu oluşturma ekranı açılıyor...' })}>
+            Yeni Anket Formu
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="sur-stats">
+        {stats.map((s, i) => (
+          <motion.div 
+            key={s.label} 
+            className="stat-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <div className="sc-icon">{s.icon}</div>
+            <div className="sc-info">
+              <span className="sc-label">{s.label}</span>
+              <div className="sc-row">
+                <span className="sc-value">{s.value}</span>
+                <span className={`sc-trend ${s.trend.startsWith('+') ? 'up' : 'down'}`}>{s.trend}</span>
+              </div>
             </div>
-         </div>
-         <div className="actions">
-            <button className="btn primary green"><Plus size={18}/> ANKET OLUŞTUR</button>
-            <button className="btn outline">PERFORMANS RAPORU</button>
-            <button className="btn primary blue">MİSAFİRE YANIT VER</button>
-         </div>
-      </header>
+          </motion.div>
+        ))}
+      </div>
 
-      <div className="survey-grid">
-         {/* Left: Departmental Scores & Trend */}
-         <aside className="left-panel">
-            <section className="card score-card">
-               <div className="card-head">
-                  <h3>DEPARTMENTAL SCORES</h3>
-                  <ChevronDown size={14}/>
-               </div>
-               <div className="total-score-circle">
-                  <div className="circle-inner">
-                     <span className="big-val">4.7</span>
-                     <div className="sub-val">
-                        <strong>4.7</strong> / 5.0
-                        <span className="trend pos"><ArrowUpRight size={12}/> +0.2</span>
-                     </div>
-                  </div>
-               </div>
-               <div className="dept-bars mt-20">
-                  <div className="d-bar-item">
-                     <div className="db-head"><span>Housekeeping</span> <strong>4.8</strong></div>
-                     <div className="db-progress"><div className="fill" style={{ width: '96%', background: '#059669' }}></div></div>
-                  </div>
-                  <div className="d-bar-item mt-15">
-                     <div className="db-head"><span>Food & Beverage</span> <strong>4.6</strong></div>
-                     <div className="db-progress"><div className="fill" style={{ width: '92%', background: '#0891b2' }}></div></div>
-                  </div>
-                  <div className="d-bar-item mt-15">
-                     <div className="db-head"><span>Front Office</span> <strong>4.5</strong></div>
-                     <div className="db-progress"><div className="fill" style={{ width: '90%', background: '#0d9488' }}></div></div>
-                  </div>
-                  <div className="d-bar-item mt-15">
-                     <div className="db-head"><span>Spa & Wellness</span> <strong>4.9</strong></div>
-                     <div className="db-progress"><div className="fill" style={{ width: '98%', background: '#16a34a' }}></div></div>
-                  </div>
-               </div>
-            </section>
-
-            <section className="card trend-card mt-20">
-               <h3>TREND ANALİZİ</h3>
-               <div style={{ height: 180 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                     <AreaChart data={trendData}>
-                        <defs>
-                           <linearGradient id="colorHk" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                           </linearGradient>
-                        </defs>
-                        <Tooltip />
-                        <Area type="monotone" dataKey="hk" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHk)" />
-                        <Area type="monotone" dataKey="fb" stroke="#10b981" fillOpacity={0} />
-                        <Area type="monotone" dataKey="fo" stroke="#f59e0b" fillOpacity={0} />
-                     </AreaChart>
-                  </ResponsiveContainer>
-               </div>
-               <div className="trend-legend mt-10">
-                  <div className="tl-item"><span className="dot blue"></span> HK</div>
-                  <div className="tl-item"><span className="dot green"></span> F&B</div>
-                  <div className="tl-item"><span className="dot yellow"></span> Front Office</div>
-               </div>
-            </section>
-         </aside>
-
-         {/* Center: Guest Reviews */}
-         <section className="main-content">
-            <div className="card reviews-card">
-               <div className="r-head">
-                  <h3>RECENT GUEST REVIEWS</h3>
-                  <div className="r-filters">
-                     <button className="btn-filter active">Tümü</button>
-                     <button className="btn-filter">Oda</button>
-                     <button className="btn-filter">Restaurant</button>
-                     <div className="search-min">
-                        <Search size={14}/>
-                        <input type="text" placeholder="Misafir ara..." />
-                     </div>
-                  </div>
-               </div>
-               <div className="review-list mt-20">
-                  {reviews.map((r, i) => (
-                    <div key={i} className="review-item">
-                       <div className="riv-avatar">{r.avatar}</div>
-                       <div className="riv-content">
-                          <div className="riv-head">
-                             <strong>{r.guest}</strong>
-                             <span className="room">Room {r.room} • {r.date}</span>
-                             <div className="stars">
-                                {Array.from({length: 5}).map((_, si) => <Star key={si} size={14} fill={si < r.score ? '#f59e0b' : 'none'} stroke={si < r.score ? '#f59e0b' : '#cbd5e1'} />)}
-                             </div>
-                          </div>
-                          <p className="riv-text">{r.text}</p>
-                       </div>
-                       <MoreVertical size={16} className="gray"/>
-                    </div>
-                  ))}
-               </div>
+      <div className="sur-content">
+        {/* Sol: Geri Bildirim Listesi */}
+        <div className="feedback-section">
+          <div className="fs-head">
+            <h3>Son Geri Bildirimler</h3>
+            <div className="fs-filters">
+              {['tümü', 'olumlu', 'olumsuz'].map(f => (
+                <button 
+                  key={f} 
+                  className={`f-tab ${filter === f ? 'active' : ''}`}
+                  onClick={() => setFilter(f)}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
             </div>
-         </section>
+          </div>
 
-         {/* Right: Open Complaints */}
-         <aside className="right-panel">
-            <section className="card complaints-card">
-               <div className="c-head">
-                  <h3>OPEN COMPLAINTS</h3>
-                  <ChevronDown size={14}/>
-               </div>
-               <div className="c-list mt-20">
-                  {complaints.map((c, i) => (
-                    <div key={i} className="c-item">
-                       <div className="ci-head">
-                          <span className={`tag ${c.status}`}>{c.type}</span>
-                          <span className="time">{c.time}</span>
-                       </div>
-                       <div className="ci-body">
-                          <strong>{c.issue}</strong>
-                          <span>Room {c.room} • Geçen Hafta</span>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </section>
-         </aside>
+          <div className="f-list">
+            {feedbackList.map((f, i) => (
+              <motion.div 
+                key={f.id} 
+                className="f-card"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <div className="f-top">
+                  <div className="f-guest">
+                    <strong>{f.guest}</strong>
+                    <span>Oda {f.room} · {f.date}</span>
+                  </div>
+                  <div className="f-score">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={12} fill={i < f.score ? '#f59e0b' : 'none'} color={i < f.score ? '#f59e0b' : '#cbd5e1'}/>
+                    ))}
+                  </div>
+                </div>
+                <p className="f-comment">{f.comment}</p>
+                <div className="f-meta">
+                  <span className="f-cat">#{f.cat}</span>
+                  <div className="f-actions">
+                    <button className="f-btn"><MessageCircle size={14}/> Yanıtla</button>
+                    <button className="f-btn"><CheckCircle size={14}/> Görev Ata</button>
+                    <button className="f-btn more"><MoreHorizontal size={14}/></button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sağ: Analiz ve Grafik */}
+        <div className="analysis-section">
+          <h3>Kategori Bazlı Dağılım</h3>
+          <div className="cat-chart">
+            {[
+              { label: 'Hizmet Kalitesi', value: 85, color: '#3b82f6' },
+              { label: 'Temizlik', value: 92, color: '#10b981' },
+              { label: 'Fiyat/Performans', value: 78, color: '#f59e0b' },
+              { label: 'Konum', value: 98, color: '#8b5cf6' },
+            ].map(c => (
+              <div key={c.label} className="cat-row">
+                <div className="cat-info">
+                  <span>{c.label}</span>
+                  <strong>%{c.value}</strong>
+                </div>
+                <div className="cat-bar-bg">
+                  <motion.div 
+                    className="cat-bar" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${c.value}%` }}
+                    style={{ background: c.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="survey-invite">
+            <div className="invite-icon"><Send size={24} color="#3b82f6"/></div>
+            <h4>Anket Gönder</h4>
+            <p>Check-out yapan misafirlere otomatik anket gönderimi aktif.</p>
+            <button className="invite-btn">Ayarları Düzenle</button>
+          </div>
+        </div>
       </div>
 
       <style>{`
-        .survey-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
-
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
-
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #1e293b; }
-        .btn.primary.green { background: #059669; color: white; }
-        .btn.primary.blue { background: #1e293b; color: white; }
-
-        .survey-grid { display: grid; grid-template-columns: 320px 1fr 300px; gap: 30px; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; letter-spacing: 0.5px; }
-
-        .score-card { text-align: center; }
-        .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sur-page { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+        .sur-head { display: flex; justify-content: space-between; align-items: flex-start; }
+        .sur-head h2 { font-size: 22px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .sur-head span { font-size: 13px; color: #94a3b8; }
         
-        .total-score-circle { width: 140px; height: 140px; border: 10px solid #f1f5f9; border-top-color: #059669; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
-        .circle-inner { display: flex; flex-direction: column; align-items: center; }
-        .big-val { font-size: 32px; font-weight: 900; color: #1e293b; }
-        .sub-val { font-size: 12px; font-weight: 700; color: #64748b; display: flex; align-items: center; gap: 4px; }
-        .trend { font-size: 10px; font-weight: 900; }
-        .trend.pos { color: #059669; }
+        .head-actions { display: flex; gap: 10px; }
+        .btn-secondary { padding: 10px 18px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: white; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { padding: 10px 18px; border-radius: 12px; border: none; background: #1e293b; color: white; font-weight: 700; font-size: 13px; cursor: pointer; }
 
-        .dept-bars { text-align: left; }
-        .db-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
-        .db-progress { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
-        .db-progress .fill { height: 100%; border-radius: 3px; }
+        .sur-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .stat-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 20px; display: flex; align-items: center; gap: 16px; }
+        .sc-icon { width: 44px; height: 44px; border-radius: 14px; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
+        .sc-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sc-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+        .sc-value { font-size: 20px; font-weight: 900; color: #1e293b; }
+        .sc-trend { font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px; }
+        .sc-trend.up { background: #f0fdf4; color: #10b981; }
+        .sc-trend.down { background: #fef2f2; color: #ef4444; }
 
-        .trend-legend { display: flex; gap: 15px; justify-content: center; }
-        .tl-item { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; color: #94a3b8; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .blue { background: #3b82f6; }
-        .green { background: #059669; }
-        .yellow { background: #f59e0b; }
+        .sur-content { display: grid; grid-template-columns: 1fr 350px; gap: 24px; }
+        
+        .feedback-section { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; }
+        .fs-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .fs-head h3 { font-size: 16px; font-weight: 800; color: #1e293b; }
+        .fs-filters { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px; }
+        .f-tab { padding: 6px 12px; border-radius: 8px; border: none; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; }
+        .f-tab.active { background: white; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .r-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; }
-        .r-filters { display: flex; gap: 10px; align-items: center; }
-        .btn-filter { padding: 6px 15px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-size: 11px; font-weight: 800; color: #64748b; cursor: pointer; }
-        .btn-filter.active { background: #ecfdf5; color: #059669; border-color: #059669; }
-        .search-min { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; }
-        .search-min input { border: none; background: transparent; outline: none; font-size: 11px; width: 100px; }
+        .f-list { display: flex; flex-direction: column; gap: 16px; }
+        .f-card { border: 1.5px solid #f1f5f9; border-radius: 18px; padding: 20px; transition: 0.2s; }
+        .f-card:hover { border-color: #3b82f6; background: #f8fafc; }
+        .f-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .f-guest strong { display: block; font-size: 14px; color: #1e293b; }
+        .f-guest span { font-size: 11px; color: #94a3b8; }
+        .f-comment { font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 16px; }
+        .f-meta { display: flex; justify-content: space-between; align-items: center; }
+        .f-cat { font-size: 11px; font-weight: 800; color: #3b82f6; }
+        .f-actions { display: flex; gap: 8px; }
+        .f-btn { background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .f-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        .f-btn.more { padding: 6px 8px; }
 
-        .review-item { display: flex; gap: 20px; border-bottom: 1px solid #f8fafc; padding: 20px 0; }
-        .riv-avatar { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #3b82f6; font-size: 14px; }
-        .riv-content { flex: 1; }
-        .riv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-        .riv-head strong { font-size: 14px; color: #1e293b; }
-        .riv-head .room { font-size: 11px; color: #94a3b8; font-weight: 700; }
-        .stars { display: flex; gap: 2px; }
-        .riv-text { font-size: 13px; color: #475569; line-height: 1.5; }
+        .analysis-section { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .analysis-section h3 { font-size: 15px; font-weight: 800; color: #1e293b; }
+        
+        .cat-chart { display: flex; flex-direction: column; gap: 16px; }
+        .cat-row { display: flex; flex-direction: column; gap: 8px; }
+        .cat-info { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+        .cat-info span { color: #64748b; }
+        .cat-bar-bg { background: #f1f5f9; height: 8px; border-radius: 10px; overflow: hidden; }
+        .cat-bar { height: 100%; border-radius: 10px; }
 
-        .c-item { padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
-        .ci-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .tag { font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 4px; }
-        .tag.neutral { background: #f1f5f9; color: #64748b; }
-        .tag.critical { background: #fee2e2; color: #ef4444; }
-        .tag.normal { background: #ecfdf5; color: #059669; }
-        .ci-body strong { display: block; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
-        .ci-body span { font-size: 11px; color: #94a3b8; font-weight: 700; }
-
-        .gray { color: #94a3b8; }
-        .mt-20 { margin-top: 20px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
+        .survey-invite { margin-top: 10px; background: #eff6ff; border-radius: 20px; padding: 24px; text-align: center; }
+        .invite-icon { width: 48px; height: 48px; background: white; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .survey-invite h4 { font-size: 14px; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+        .survey-invite p { font-size: 11px; color: #64748b; line-height: 1.5; margin-bottom: 16px; }
+        .invite-btn { width: 100%; padding: 12px; border: none; background: #3b82f6; color: white; border-radius: 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
       `}</style>
     </div>
   );
