@@ -1,269 +1,202 @@
 import React, { useState } from 'react';
-import { 
-  Bed, Wrench, Search, Plus, 
-  AlertTriangle, CheckCircle, RefreshCcw,
-  Box, User, ChevronDown, Filter,
-  Clock, LayoutGrid, PieChart as PieIcon,
-  Activity, Droplets, Thermometer,
-  MoreVertical, Hammer
-} from 'lucide-react';
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip
-} from 'recharts';
+import { useHotel } from '../../context/HotelContext';
 import { motion } from 'framer-motion';
+import { Search, Plus, CheckCircle, AlertCircle, Clock, Wrench, Bed, ChevronRight } from 'lucide-react';
 
-const rooms = Array.from({ length: 45 }, (_, i) => ({
-  id: (101 + i).toString(),
-  status: Math.random() > 0.7 ? 'dirty' : (Math.random() > 0.5 ? 'cleaning' : 'clean')
-}));
+const PRIORITY_MAP = {
+  high:   { label: 'Acil',   color: '#ef4444', bg: '#fef2f2' },
+  normal: { label: 'Normal', color: '#f59e0b', bg: '#fffbeb' },
+  low:    { label: 'Düşük',  color: '#64748b', bg: '#f8fafc' },
+};
 
-const stockMovements = [
-  { item: 'KİRLİ', unit: 'kg', stock: '10 kg', critical: '10 kg', price: '₺ 26 /kg' },
-  { item: 'TEMİZ', unit: 'lt', stock: '10 kg', critical: '8 kg', price: '₺ 27 /kg' },
-];
-
-const techOrders = [
-  { id: '204', room: '104', issue: 'Klima Arızası', person: 'Bekir', time: '2h', priority: 'KRİTİK' },
-  { id: 'Lobi', room: 'Lobi', issue: 'Ampul Değişimi', person: 'Kerem', time: '35m', priority: 'NORMAL' },
-  { id: '107', room: '107', issue: 'Fiyat Bak', person: 'Volkan', time: '1h', priority: 'NORMAL' },
-  { id: '312', room: '312', issue: 'Toilet Çatlaması', person: 'Mehmet', time: '3h', priority: 'KRİTİK' },
-];
-
-const pieData = [
-  { name: 'Kirli', value: 59, color: '#ef4444' },
-  { name: 'İyi', value: 33, color: '#3b82f6' },
-  { name: 'Arızalı', value: 8, color: '#f59e0b' },
-];
+const STATUS_MAP = {
+  bekliyor: { label: 'Bekliyor', color: '#f59e0b', icon: <Clock size={14}/> },
+  devam:    { label: 'Devam',    color: '#3b82f6', icon: <AlertCircle size={14}/> },
+  bitti:    { label: 'Tamamlandı', color: '#10b981', icon: <CheckCircle size={14}/> },
+};
 
 const Housekeeping = () => {
+  const { tasks, updateTask, addTask, rooms, stats } = useHotel();
+  const [filter, setFilter] = useState('tümü');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ room: '', desc: '', priority: 'normal', type: 'housekeeping', assignee: '' , status: 'bekliyor' });
+
+  const displayed = tasks.filter(t =>
+    filter === 'tümü' ? true :
+    filter === 'housekeeping' ? t.type === 'housekeeping' :
+    filter === 'technical' ? t.type === 'technical' :
+    t.status === filter
+  );
+
+  const submit = (e) => {
+    e.preventDefault();
+    addTask(form);
+    setForm({ room: '', desc: '', priority: 'normal', type: 'housekeeping', assignee: '', status: 'bekliyor' });
+    setShowForm(false);
+  };
+
   return (
     <div className="hk-container">
-      <header className="header">
-         <div className="title-section">
-            <Bed size={32} className="icon-blue"/>
-            <div>
-               <h2>Housekeeping & Maintenance</h2>
-               <span>Oda temizlik yönetimi, stok takibi ve teknik servis koordinasyonu</span>
-            </div>
-         </div>
-         <div className="actions">
-            <button className="btn outline">HK GÖREVLİ ATAMA</button>
-            <button className="btn outline">AMBAR GİRİŞİ</button>
-            <button className="btn primary red"><AlertTriangle size={18}/> ARIZA BİLDİR</button>
-         </div>
-      </header>
+      {/* Header */}
+      <div className="hk-header">
+        <div>
+          <h2>Kat Hizmetleri & Teknik Servis</h2>
+          <span>Temizlik görevleri, iş emirleri ve oda durumu takibi</span>
+        </div>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
+          <Plus size={16}/> Yeni Görev Ekle
+        </button>
+      </div>
 
-      <div className="hk-grid">
-         {/* Left: Stock & Stats */}
-         <aside className="left-panel">
-            <section className="card depot-card">
-               <h3>AMBAR LİSTESİ</h3>
-               <div className="d-list">
-                  <div className="d-item active">
-                     <Box size={16} className="blue"/>
-                     <div className="d-info">
-                        <strong>Ana Ambar</strong>
-                        <span>185 ürün</span>
-                     </div>
-                     <ChevronDown size={14} className="gray"/>
-                  </div>
-                  <div className="d-item mt-10">
-                     <div className="dot"></div>
-                     <div className="d-info">
-                        <strong>Mutfak & Bar</strong>
-                        <span>226 ürün</span>
-                     </div>
-                  </div>
-               </div>
-            </section>
+      {/* KPI row */}
+      <div className="hk-kpi-row">
+        {[
+          { label: 'Bekleyen',   count: tasks.filter(t => t.status === 'bekliyor').length,   color: '#f59e0b' },
+          { label: 'Devam Eden', count: tasks.filter(t => t.status === 'devam').length,       color: '#3b82f6' },
+          { label: 'Tamamlanan',count: tasks.filter(t => t.status === 'bitti').length,        color: '#10b981' },
+          { label: 'Kirli Oda', count: stats.dirty,                                           color: '#8b5cf6' },
+        ].map((k, i) => (
+          <div key={i} className="kpi-card">
+            <div className="kpi-num" style={{ color: k.color }}>{k.count}</div>
+            <div className="kpi-label">{k.label}</div>
+          </div>
+        ))}
+      </div>
 
-            <section className="card stats-card mt-20">
-               <h3>STOK DURUMU</h3>
-               <div className="donut-box">
-                  <ResponsiveContainer width="100%" height={150}>
-                     <PieChart>
-                        <Pie
-                           data={pieData}
-                           innerRadius={45}
-                           outerRadius={60}
-                           paddingAngle={5}
-                           dataKey="value"
-                        >
-                           {pieData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.color} />
-                           ))}
-                        </Pie>
-                     </PieChart>
-                  </ResponsiveContainer>
-                  <div className="d-text">
-                     <strong>₺ 97,450</strong>
-                     <span>TOPLAM MALİYET</span>
-                  </div>
-               </div>
-               <div className="hk-stats mt-15">
-                  <div className="s-item">TOPLAM KİRLİ: <strong>45</strong></div>
-                  <div className="s-item">HAZIR ODA: <strong>12</strong></div>
-                  <div className="s-item">ARIZALI: <strong>3</strong></div>
-               </div>
-            </section>
-         </aside>
+      {/* New Task Form */}
+      {showForm && (
+        <motion.form
+          className="task-form card"
+          onSubmit={submit}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3>Yeni Görev</h3>
+          <div className="form-row">
+            <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+              <option value="housekeeping">Kat Hizmetleri</option>
+              <option value="technical">Teknik Servis</option>
+            </select>
+            <select value={form.room} onChange={e => setForm({...form, room: e.target.value})} required>
+              <option value="">Oda Seçin</option>
+              {rooms.map(r => <option key={r.id} value={r.id}>{r.id} — {r.type}</option>)}
+            </select>
+            <select value={form.priority} onChange={e => setForm({...form, priority: e.target.value})}>
+              <option value="high">Acil</option>
+              <option value="normal">Normal</option>
+              <option value="low">Düşük</option>
+            </select>
+          </div>
+          <div className="form-row">
+            <input
+              type="text" placeholder="Görev açıklaması..."
+              value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} required
+            />
+            <input
+              type="text" placeholder="Sorumlu personel"
+              value={form.assignee} onChange={e => setForm({...form, assignee: e.target.value})}
+            />
+          </div>
+          <div className="form-actions">
+            <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>İptal</button>
+            <button type="submit" className="btn-primary">Görevi Oluştur</button>
+          </div>
+        </motion.form>
+      )}
 
-         {/* Center: Room Matrix & Movements */}
-         <section className="main-content">
-            <div className="card matrix-card">
-               <div className="m-head">
-                  <h3>ODA TEMİZLİK DURUM MATRİSİ</h3>
-                  <div className="m-actions">
-                     <button className="icon-btn active"><LayoutGrid size={16}/></button>
-                     <button className="icon-btn"><Search size={16}/></button>
-                  </div>
-               </div>
-               <div className="room-dots">
-                  {rooms.map((r, i) => (
-                    <div key={i} className={`room-dot ${r.status}`} title={r.id}>
-                       <span>{r.id.slice(-2)}</span>
-                    </div>
-                  ))}
-               </div>
-               <div className="m-footer mt-20">
-                  <div className="legend">
-                     <div className="l-item"><div className="dot dirty"></div> Kirli</div>
-                     <div className="l-item"><div className="dot clean"></div> Temiz</div>
-                     <div className="l-item"><div className="dot cleaning"></div> Temizleniyor</div>
-                  </div>
-               </div>
-            </div>
+      {/* Filters */}
+      <div className="filter-bar">
+        {['tümü', 'housekeeping', 'technical', 'bekliyor', 'devam', 'bitti'].map(f => (
+          <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
+            {f === 'tümü' ? 'Tümü' : f === 'housekeeping' ? 'Kat Hizm.' : f === 'technical' ? 'Teknik' : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
 
-            <div className="card movements-card mt-20">
-               <h3>STOK HAREKETLERİ</h3>
-               <table className="hk-table">
-                  <thead>
-                     <tr>
-                        <th>Ürün Adı</th>
-                        <th>Birim</th>
-                        <th>Mevcut Stok</th>
-                        <th>Kritik Seviye</th>
-                        <th>Son Alış Fiyatı</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {stockMovements.map((s, i) => (
-                       <tr key={i}>
-                          <td><strong>{s.item}</strong></td>
-                          <td>{s.unit}</td>
-                          <td><span className="stock-badge">{s.stock}</span></td>
-                          <td>{s.critical}</td>
-                          <td>{s.price}</td>
-                       </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-         </section>
-
-         {/* Right: Technical Orders */}
-         <aside className="right-panel">
-            <section className="card tech-card">
-               <div className="t-head">
-                  <h3>TEKNİK SERVİS İŞ EMİRLERİ</h3>
-                  <div className="t-filter">
-                     <span>Oda Sıralı</span>
-                     <ChevronDown size={14}/>
-                  </div>
-               </div>
-               <div className="tech-list mt-15">
-                  {techOrders.map((o, i) => (
-                    <div key={i} className="tech-item">
-                       <div className="ti-head">
-                          <strong>{o.room} • {o.issue}</strong>
-                          <span className={`p-tag ${o.priority === 'KRİTİK' ? 'red' : 'yellow'}`}>{o.priority}</span>
-                       </div>
-                       <div className="ti-footer">
-                          <span><User size={12}/> {o.person} | {o.time}</span>
-                          <span className="time-ago">+{i+1}s</span>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-               <button className="btn-full mt-20">Tümünü Gör...</button>
-            </section>
-         </aside>
+      {/* Task Cards */}
+      <div className="task-grid">
+        {displayed.map((task, i) => {
+          const pr = PRIORITY_MAP[task.priority];
+          const st = STATUS_MAP[task.status];
+          return (
+            <motion.div
+              key={task.id}
+              className="task-card"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+            >
+              <div className="tc-top">
+                <div className="tc-type-icon">
+                  {task.type === 'housekeeping' ? <Bed size={18} color="#9b59b6"/> : <Wrench size={18} color="#e67e22"/>}
+                </div>
+                <span className="priority-pill" style={{ background: pr.bg, color: pr.color }}>{pr.label}</span>
+              </div>
+              <div className="tc-room">Oda {task.room}</div>
+              <p className="tc-desc">{task.desc}</p>
+              <div className="tc-meta">
+                <span>{task.assignee || 'Atanmadı'}</span>
+                <span>{task.created}</span>
+              </div>
+              <div className="tc-status-bar">
+                <div className="st-indicator" style={{ color: st.color }}>
+                  {st.icon} {st.label}
+                </div>
+                <div className="tc-actions">
+                  {task.status === 'bekliyor' && (
+                    <button className="micro-btn blue" onClick={() => updateTask(task.id, { status: 'devam' })}>Başlat</button>
+                  )}
+                  {task.status === 'devam' && (
+                    <button className="micro-btn green" onClick={() => updateTask(task.id, { status: 'bitti' })}>Tamamla</button>
+                  )}
+                  {task.status === 'bitti' && (
+                    <span className="done-badge">✓ Tamamlandı</span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <style>{`
-        .hk-container {
-          padding: 30px;
-          background: #f1f5f9;
-          height: calc(100vh - 70px);
-          overflow-y: auto;
-          display: flex; flex-direction: column; gap: 30px;
-        }
+        .hk-container { padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .hk-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .hk-header h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
+        .hk-header span { font-size: 14px; color: #94a3b8; }
+        .btn-primary { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .title-section { display: flex; align-items: center; gap: 20px; }
-        .icon-blue { color: #3b82f6; }
-        .title-section h2 { font-size: 24px; font-weight: 800; color: #1e293b; }
-        .title-section span { font-size: 14px; color: #64748b; }
+        .hk-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .kpi-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; text-align: center; }
+        .kpi-num { font-size: 36px; font-weight: 900; }
+        .kpi-label { font-size: 13px; color: #94a3b8; font-weight: 700; margin-top: 4px; }
 
-        .actions { display: flex; gap: 10px; }
-        .btn { padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
-        .btn.outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
-        .btn.primary.red { background: #ef4444; color: white; display: flex; align-items: center; gap: 8px; }
+        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 24px; }
+        .task-form h3 { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 16px; }
+        .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+        .form-row select, .form-row input { flex: 1; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 13px; outline: none; }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-cancel { padding: 10px 20px; border: 1px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 700; cursor: pointer; }
 
-        .hk-grid { display: grid; grid-template-columns: 260px 1fr 310px; gap: 30px; }
+        .filter-bar { display: flex; gap: 8px; }
+        .filter-btn { padding: 8px 16px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: white; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; }
+        .filter-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
 
-        .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { font-size: 11px; font-weight: 900; color: #1e293b; margin-bottom: 25px; letter-spacing: 0.5px; }
-
-        .d-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; transition: 0.2s; cursor: pointer; }
-        .d-item.active { background: #eff6ff; }
-        .d-info { display: flex; flex-direction: column; }
-        .d-info strong { font-size: 13px; color: #1e293b; }
-        .d-info span { font-size: 10px; color: #94a3b8; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
-
-        .donut-box { position: relative; display: flex; align-items: center; justify-content: center; }
-        .d-text { position: absolute; text-align: center; }
-        .d-text strong { display: block; font-size: 14px; color: #1e293b; }
-        .d-text span { font-size: 8px; color: #94a3b8; font-weight: 800; }
-
-        .hk-stats { display: flex; flex-direction: column; gap: 8px; }
-        .s-item { font-size: 11px; font-weight: 800; color: #64748b; display: flex; justify-content: space-between; }
-        .s-item strong { color: #1e293b; }
-
-        .room-dots { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
-        .room-dot { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: white; cursor: pointer; }
-        .room-dot.dirty { background: #ef4444; }
-        .room-dot.clean { background: #3b82f6; }
-        .room-dot.cleaning { background: #f59e0b; }
-
-        .legend { display: flex; gap: 15px; }
-        .l-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #94a3b8; font-weight: 800; }
-        .l-item .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .l-item .dot.dirty { background: #ef4444; }
-        .l-item .dot.clean { background: #3b82f6; }
-        .l-item .dot.cleaning { background: #f59e0b; }
-
-        .hk-table { width: 100%; border-collapse: collapse; }
-        .hk-table th { text-align: left; padding: 12px; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
-        .hk-table td { padding: 15px 12px; font-size: 12px; border-bottom: 1px solid #f8fafc; color: #475569; }
-        .stock-badge { padding: 2px 8px; background: #eff6ff; color: #3b82f6; border-radius: 4px; font-size: 10px; font-weight: 900; }
-
-        .tech-item { padding: 15px; background: #f8fafc; border-radius: 12px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
-        .ti-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .ti-head strong { font-size: 12px; color: #1e293b; flex: 1; }
-        .p-tag { font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
-        .p-tag.red { background: #ef4444; color: white; }
-        .p-tag.yellow { background: #f59e0b; color: white; }
-        .ti-footer { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; font-weight: 800; }
-
-        .btn-full { width: 100%; padding: 12px; background: #f1f5f9; color: #64748b; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid #e2e8f0; }
-
-        .blue { color: #3b82f6; }
-        .gray { color: #94a3b8; }
-        .mt-20 { margin-top: 20px; }
-        .mt-15 { margin-top: 15px; }
-        .mt-10 { margin-top: 10px; }
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .task-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .tc-top { display: flex; justify-content: space-between; align-items: center; }
+        .tc-type-icon { width: 36px; height: 36px; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .priority-pill { font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+        .tc-room { font-size: 18px; font-weight: 900; color: #1e293b; }
+        .tc-desc { font-size: 13px; color: #64748b; line-height: 1.4; flex: 1; }
+        .tc-meta { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; font-weight: 600; }
+        .tc-status-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+        .st-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+        .tc-actions {}
+        .micro-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 11px; font-weight: 800; cursor: pointer; }
+        .micro-btn.blue { background: #eff6ff; color: #3b82f6; }
+        .micro-btn.green { background: #ecfdf5; color: #10b981; }
+        .done-badge { font-size: 11px; color: #10b981; font-weight: 700; }
       `}</style>
     </div>
   );

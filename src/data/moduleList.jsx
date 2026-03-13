@@ -4,7 +4,7 @@ import {
   Box, ShoppingCart, Users, HeartHandshake, 
   FileText, Waves, Utensils,
   ShieldCheck, Receipt, Moon, 
-  Layers, ClipboardCheck, Globe, Zap, 
+  Layers, ClipboardCheck, Globe, Zap, Cpu,
   LayoutDashboard,
   Calendar as CalendarIcon, Server, TrendingUp,
   Bot, Database, LayoutGrid, Handshake,

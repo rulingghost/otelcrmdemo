@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import Login from './components/auth/Login';
 import MainHub from './components/MainHub';
+import { HotelProvider } from './context/HotelContext';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userContext, setUserContext] = useState(null);
 
   const handleLogin = (data) => {
-    console.log('Logging in with:', data);
     setUserContext(data);
     setIsLoggedIn(true);
   };
@@ -17,7 +17,9 @@ function App() {
   }
 
   return (
-    <MainHub user={userContext} onLogout={() => setIsLoggedIn(false)} />
+    <HotelProvider>
+      <MainHub user={userContext} onLogout={() => setIsLoggedIn(false)} />
+    </HotelProvider>
   );
 }
 
