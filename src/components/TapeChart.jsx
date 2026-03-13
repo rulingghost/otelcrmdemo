@@ -4,7 +4,7 @@ import {
   ChevronRight, ChevronLeft, Filter,
   Maximize2, Grid, List as ListIcon,
   HelpCircle, MoreVertical,
-  Clock, CheckCircle, AlertTriangle,
+  Clock, CheckCircle, AlertCircle, AlertTriangle,
   User, ArrowRight, Globe
 } from 'lucide-react';
 import { motion } from 'framer-motion';
