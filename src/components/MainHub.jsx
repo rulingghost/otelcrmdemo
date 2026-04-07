@@ -23,6 +23,7 @@ const MainHub = ({ user, onLogout }) => {
           activeModuleName={activeModule?.name} 
           onLogout={onLogout}
           onBack={activeModuleId ? () => setActiveModuleId(null) : null}
+          onSelectModule={setActiveModuleId}
         />
         
         <div className="content-area">

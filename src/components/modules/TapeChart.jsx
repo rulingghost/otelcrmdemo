@@ -51,6 +51,15 @@ const TapeChart = () => {
         <div className="leg"><div className="leg-dot today-dot"/><span>Bugün</span></div>
       </div>
 
+      {/* Özet */}
+      <div className="tc-summary">
+        <div className="tcs-item"><strong>{rooms.length}</strong><span>Toplam Oda</span></div>
+        <div className="tcs-item"><strong>{rooms.filter(r=>r.status==='dolu').length}</strong><span>Dolu</span></div>
+        <div className="tcs-item"><strong>{rooms.filter(r=>r.status==='boş').length}</strong><span>Boş</span></div>
+        <div className="tcs-item"><strong>{rooms.filter(r=>r.status==='arızalı').length}</strong><span>OOO</span></div>
+        <div className="tcs-item"><strong>%{Math.round(rooms.filter(r=>r.status==='dolu').length/rooms.length*100)}</strong><span>Doluluk</span></div>
+      </div>
+
       <div className="tape-wrap">
         <div className="tape-grid" style={{gridTemplateColumns:`120px repeat(${days.length}, 1fr)`}}>
           {/* Header row */}
@@ -118,6 +127,10 @@ const TapeChart = () => {
         .occ-bar { position:absolute; inset:4px 2px; border-radius:6px; display:flex; align-items:center; overflow:hidden; }
         .occ-name { font-size:10px; color:white; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 6px; }
         .ooo-bar { position:absolute; inset:4px 2px; background:#fef2f2; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; color:#ef4444; border:1px dashed #fca5a5; }
+        .tc-summary { display:flex; gap:16px; }
+        .tcs-item { background:white; border:1px solid #e2e8f0; border-radius:14px; padding:14px 22px; text-align:center; }
+        .tcs-item strong { display:block; font-size:22px; font-weight:900; color:#1e293b; }
+        .tcs-item span { font-size:11px; color:#94a3b8; font-weight:700; }
       `}</style>
     </div>
   );

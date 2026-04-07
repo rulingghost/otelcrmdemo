@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, MapPin, Camera, CheckCircle, Clock, X } from 'lucide-react';
+import { Package, Plus, MapPin, Camera, CheckCircle, Clock, X, Search } from 'lucide-react';
 
 const CATS = ['Elektronik','Kıyafet','Takı','Çanta','Belge','Oyuncak','Diğer'];
 
@@ -18,6 +18,8 @@ const LostAndFound = () => {
   const [deliverModal, setDeliverModal] = useState(null);
   const [deliverGuest, setDeliverGuest] = useState('');
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
+  const [searchQ, setSearchQ] = useState('');
+  const [catFilter, setCatFilter] = useState('Tümü');
 
   const submit = (e) => {
     e.preventDefault();
@@ -40,6 +42,12 @@ const LostAndFound = () => {
     { label:'Sahibi Bekleniyor', val:items.filter(i=>i.status==='bekliyor').length, color:'#f59e0b' },
     { label:'Teslim Edildi', val:items.filter(i=>i.status==='teslim').length, color:'#10b981' },
   ];
+
+  const filteredItems = items.filter(i => {
+    const matchSearch = !searchQ || i.name.toLowerCase().includes(searchQ.toLowerCase()) || i.location.toLowerCase().includes(searchQ.toLowerCase());
+    const matchCat = catFilter === 'Tümü' || i.cat === catFilter;
+    return matchSearch && matchCat;
+  });
 
   return (
     <div className="lf-page">
@@ -70,8 +78,18 @@ const LostAndFound = () => {
         )}
       </AnimatePresence>
 
+      {/* Filters */}
+      <div className="lf-filters">
+        <div className="lf-search"><Search size={14}/><input placeholder="Eşya veya konum ara..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/></div>
+        <div className="cat-pills">
+          {['Tümü',...CATS].map(c=>(
+            <button key={c} className={`cpill ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c}</button>
+          ))}
+        </div>
+      </div>
+
       <div className="lf-cards">
-        {items.map((item,i)=>(
+        {filteredItems.map((item,i)=>(
           <motion.div key={item.id} className={`lf-card ${item.status}`} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}>
             <div className="lfc-top">
               <div className="cat-icon">{item.cat==='Elektronik'?'💻':item.cat==='Takı'?'💍':item.cat==='Kıyafet'?'👕':item.cat==='Çanta'?'👜':item.cat==='Oyuncak'?'🧸':'📦'}</div>

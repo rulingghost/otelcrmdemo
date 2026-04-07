@@ -111,8 +111,8 @@ const KBS = () => {
               </div>
               <div className="modal-foot">
                 <button className="btn-cancel" onClick={()=>setSelected(null)}>Kapat</button>
-                {!sentList.includes(selected.id) && (
-                  <button className="btn-primary" onClick={()=>{sendKBS(selected.id);setSelected(null);}}>
+                {!kbsSent.find(k => k.resId === selected.id) && (
+                  <button className="btn-primary" onClick={()=>{ctxSendKBS(selected.id);setSelected(null);}}>
                     <Shield size={15}/> KBS'ye Gönder
                   </button>
                 )}

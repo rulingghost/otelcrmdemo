@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Plus, Search, X, CheckCircle, Package, Truck } from 'lucide-react';
+import { ShoppingBag, Plus, Search, X, CheckCircle, Package, Truck, Filter } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const SUPPLIERS = ['Temizlik A.Ş.', 'Gıda Ltd.', 'Tekstil San.', 'Teknoloji A.Ş.', 'Ofis Malz. Ltd.'];
 const CATS = ['Gıda & İçecek', 'Temizlik', 'Tekstil', 'Teknoloji', 'Ofis', 'Bakım & Onarım'];
@@ -27,6 +28,8 @@ const Procurement = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ item:'', supplier: SUPPLIERS[0], cat: CATS[0], amount:'', date:'2026-03-14' });
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('tümü');
 
   const submit = (e) => {
     e.preventDefault();
@@ -45,6 +48,17 @@ const Procurement = () => {
   const total = orders.reduce((s,o)=>s+o.amount,0);
   const delivered = orders.filter(o=>o.status==='teslim').length;
 
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = !search || o.item.toLowerCase().includes(search.toLowerCase()) || o.supplier.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'tümü' || o.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const supplierData = SUPPLIERS.map(s => ({
+    name: s.split(' ')[0],
+    tutar: orders.filter(o => o.supplier === s).reduce((sum, o) => sum + o.amount, 0)
+  })).filter(s => s.tutar > 0);
+
   return (
     <div className="proc-page">
       <div className="proc-head">
@@ -62,6 +76,30 @@ const Procurement = () => {
           <div key={i} className="pk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
         ))}
       </div>
+
+      {/* Search & Filter */}
+      <div className="proc-filters">
+        <div className="proc-search"><Search size={14}/><input placeholder="Sipariş veya tedarikçi ara..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div className="status-pills">
+          {['tümü','bekliyor','onay','yolda','teslim','iptal'].map(s=>(
+            <button key={s} className={`sp ${statusFilter===s?'active':''}`} onClick={()=>setStatusFilter(s)}>{s==='tümü'?'Tümü':STATUS_STYLE[s]?.label||s}</button>
+          ))}
+        </div>
+      </div>
+
+      {supplierData.length > 0 && (
+        <div className="supplier-chart">
+          <h4>Tedarikçi Bazlı Harcama</h4>
+          <ResponsiveContainer width="100%" height={80}>
+            <BarChart data={supplierData} layout="vertical" barSize={12}>
+              <XAxis type="number" hide/>
+              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{fill:'#64748b',fontSize:11}} width={65}/>
+              <Tooltip formatter={v=>[`₺${v.toLocaleString()}`,'Tutar']}/>
+              <Bar dataKey="tutar" fill="#3b82f6" radius={[0,6,6,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <AnimatePresence>
         {showForm && (
@@ -83,7 +121,7 @@ const Procurement = () => {
         <table className="proc-table">
           <thead><tr><th>Sipariş No</th><th>Ürün</th><th>Tedarikçi</th><th>Kategori</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
           <tbody>
-            {orders.map((o,i)=>{
+            {filteredOrders.map((o,i)=>{
               const st = STATUS_STYLE[o.status];
               return (
                 <motion.tr key={o.id} initial={{opacity:0}} animate={{opacity:1}} transition={{delay:i*0.04}}>
@@ -143,6 +181,14 @@ const Procurement = () => {
         .mb.purple{background:#f5f3ff;color:#8b5cf6;}
         .mb.green{background:#ecfdf5;color:#10b981;}
         .mb.red{background:#fef2f2;color:#ef4444;}
+        .proc-filters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+        .proc-search{display:flex;align-items:center;gap:8px;background:white;border:1.5px solid #e2e8f0;padding:9px 14px;border-radius:10px;min-width:280px;}
+        .proc-search input{border:none;background:transparent;outline:none;font-size:13px;width:100%;}
+        .status-pills{display:flex;gap:6px;flex-wrap:wrap;}
+        .sp{padding:6px 14px;border-radius:20px;border:1.5px solid #e2e8f0;background:white;font-size:11px;font-weight:700;color:#64748b;cursor:pointer;}
+        .sp.active{background:#1e293b;color:white;border-color:#1e293b;}
+        .supplier-chart{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:16px;}
+        .supplier-chart h4{font-size:12px;font-weight:800;color:#64748b;margin-bottom:8px;}
       `}</style>
     </div>
   );

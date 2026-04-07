@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHotel } from '../../context/HotelContext';
 import { 
   Layout, Search, Plus, 
   Save, Share, FileJson, 
@@ -33,6 +34,14 @@ const ciroData = [
 ];
 
 const DashboardBuilder = () => {
+  const { stats, cashTransactions, rooms } = useHotel();
+  
+  const dynamicCiroData = cashTransactions
+    .filter(t => t.type === 'gelir')
+    .slice(-5)
+    .map((t, i) => ({ name: t.date?.slice(5) || `D${i+1}`, val: t.amount }));
+  const chartData = dynamicCiroData.length > 2 ? dynamicCiroData : ciroData;
+
   return (
     <div className="builder-container">
       <header className="header">
@@ -84,7 +93,7 @@ const DashboardBuilder = () => {
                   </div>
                   <div style={{ height: 150 }}>
                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={ciroData}>
+                        <LineChart data={chartData}>
                            <Line type="monotone" dataKey="val" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill: '#3b82f6'}} />
                         </LineChart>
                      </ResponsiveContainer>

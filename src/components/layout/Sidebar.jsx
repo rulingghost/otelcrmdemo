@@ -5,19 +5,9 @@ import {
   Calendar, CreditCard, Users, LogIn, LogOut, FileText,
   ShoppingCart, Wrench, Bed, Search, X, Star
 } from 'lucide-react';
+import Fuse from 'fuse.js';
 
-const QUICK_ACCESS = [
-  { id: 'dashboard',       name: 'Dashboard',        icon: <Home size={18}/>,        color:'#3b82f6' },
-  { id: 'front-office',    name: 'Ön Büro',           icon: <LogIn size={18}/>,       color:'#10b981' },
-  { id: 'room-rack',       name: 'Oda Planı',         icon: <Bed size={18}/>,         color:'#8b5cf6' },
-  { id: 'reservations-tape', name: 'Rezervasyon Takvimi', icon: <Calendar size={18}/>,  color:'#f59e0b' },
-  { id: 'new-reservation', name: 'Yeni Rezervasyon',  icon: <Star size={18}/>,        color:'#ef4444' },
-  { id: 'checkout',        name: 'Check-Out',         icon: <LogOut size={18}/>,      color:'#e67e22' },
-  { id: 'folio',           name: 'Folio / Hesap',     icon: <FileText size={18}/>,    color:'#3b82f6' },
-  { id: 'cash-desk',       name: 'Kasa',              icon: <CreditCard size={18}/>,  color:'#10b981' },
-  { id: 'housekeeping',    name: 'Kat Hizmetleri',    icon: <LayoutGrid size={18}/>,  color:'#8b5cf6' },
-  { id: 'tech-service',    name: 'Teknik Servis',     icon: <Wrench size={18}/>,      color:'#f59e0b' },
-];
+
 
 const Sidebar = ({ activeModule, onSelectModule, modules }) => {
   const { stats, reservations, tasks } = useHotel();
@@ -37,8 +27,13 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
     'kbs':            2, // static demo
   };
 
+  const fuse = React.useMemo(() => new Fuse(modules, {
+    keys: ['name', 'id'],
+    threshold: 0.4,
+  }), [modules]);
+
   const filteredModules = search
-    ? modules.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
+    ? fuse.search(search).map(result => result.item)
     : modules;
 
   return (
@@ -71,32 +66,11 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
       </div>
 
       <nav className="sidebar-nav">
-        {/* Quick Access */}
-        <div className="nav-group">
-          <label>HIZLI ERİŞİM</label>
-          {QUICK_ACCESS.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item ${activeModule === item.id ? 'active' : ''}`}
-              onClick={() => onSelectModule(item.id)}
-            >
-              <div className="ni-icon" style={{ color: activeModule === item.id ? 'white' : item.color }}>
-                {item.icon}
-              </div>
-              <span>{item.name}</span>
-              {BADGES[item.id] && (
-                <span className={`nav-badge ${BADGES[item.id] > 0 ? 'red' : ''}`}>{BADGES[item.id]}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* All modules */}
-        <div className="nav-group mt-16">
+        <div className="nav-group mt-16" style={{ marginTop: 0 }}>
           <div className="all-mod-head">
             <label>TÜM MODÜLLER</label>
             <button className="search-toggle" onClick={()=>{ setSearchOpen(!searchOpen); setSearch(''); }}>
-              {searchOpen ? <X size={13}/> : <Search size={13}/>}
+              {searchOpen ? <X size={15}/> : <Search size={15}/>}
             </button>
           </div>
           {searchOpen && (
@@ -112,15 +86,15 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
             {filteredModules.map(module => (
               <button
                 key={module.id}
-                className={`nav-item mini ${activeModule === module.id ? 'active' : ''}`}
+                className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
                 onClick={() => onSelectModule(module.id)}
               >
-                <div className="mini-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
-                  {React.cloneElement(module.icon, { size: 14 })}
+                <div className="ni-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
+                  {React.cloneElement(module.icon, { size: 18 })}
                 </div>
                 <span>{module.name}</span>
                 {BADGES[module.id] && (
-                  <span className="nav-badge red">{BADGES[module.id]}</span>
+                  <span className={`nav-badge ${BADGES[module.id] > 0 ? 'red' : ''}`}>{BADGES[module.id]}</span>
                 )}
               </button>
             ))}
@@ -164,8 +138,8 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
         .nav-group label { display: block; font-size: 9px; font-weight: 800; color: #475569; margin-bottom: 8px; letter-spacing: 1.5px; padding: 0 6px; }
         .all-mod-head { display: flex; justify-content: space-between; align-items: center; padding: 0 6px; margin-bottom: 8px; }
         .all-mod-head label { margin: 0; }
-        .search-toggle { background: transparent; border: none; color: #64748b; cursor: pointer; padding: 4px; display: flex; }
-        .search-toggle:hover { color: white; }
+        .search-toggle { background: transparent; border: none; color: #64748b; cursor: pointer; padding: 4px; display: flex; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 8px; }
+        .search-toggle:hover { color: white; transform: scale(1.4); background: rgba(255,255,255,0.1); }
         .mod-search { width: 100%; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.07); border-radius: 8px; color: white; font-size: 12px; outline: none; margin-bottom: 8px; }
         .mod-search::placeholder { color: #64748b; }
 

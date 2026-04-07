@@ -12,13 +12,25 @@ const CHANNELS = [
 ];
 
 const ChannelManager = () => {
-  const { addNotification } = useHotel();
+  const { addNotification, reservations } = useHotel();
   const [syncing, setSyncing] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [rates, setRates] = useState({
     standard: 1850,
     deluxe: 2400,
     suite: 4200,
     family: 3100
+  });
+  const [stopSale, setStopSale] = useState({ Single: false, Double: false, Triple: false });
+
+  const channelCounts = CHANNELS.map(ch => {
+    const count = reservations.filter(r => {
+      if(ch.id==='booking') return r.channel==='Booking.com';
+      if(ch.id==='expedia') return r.channel==='Expedia';
+      if(ch.id==='website') return r.channel==='Direkt';
+      return false;
+    }).length;
+    return { ...ch, resCount: count };
   });
 
   const handleSyncAll = () => {
@@ -54,7 +66,7 @@ const ChannelManager = () => {
         {/* Canallar */}
         <div className="chan-list">
           <h3>Bağlı Satış Kanalları</h3>
-          {CHANNELS.map((ch, i) => (
+          {channelCounts.map((ch, i) => (
             <motion.div 
               key={ch.id} 
               className={`chan-card ${ch.status}`}
@@ -66,6 +78,7 @@ const ChannelManager = () => {
               <div className="ch-info">
                 <strong>{ch.name}</strong>
                 <span>Son Senk: {ch.sync}</span>
+                {ch.resCount > 0 && <span className="ch-res-count">{ch.resCount} rez.</span>}
               </div>
               <div className={`ch-status ${ch.status}`}>
                 {ch.status === 'aktif' ? <CheckCircle size={14}/> : <AlertCircle size={14}/>}
@@ -109,10 +122,11 @@ const ChannelManager = () => {
               <h3><Shield size={16}/> Satış Durdurma (Stop Sale)</h3>
               <div className="stop-grid">
                 {['Single', 'Double', 'Triple'].map(t => (
-                  <div key={t} className="stop-item">
+                  <div key={t} className={`stop-item ${stopSale[t]?'stopped':''}`}>
                     <span>{t} Odalar</span>
+                    <span className="stop-status">{stopSale[t]?'🛑 Durduruldu':'✅ Satışta'}</span>
                     <div className="toggle">
-                      <input type="checkbox" id={`stop-${t}`} />
+                      <input type="checkbox" id={`stop-${t}`} checked={stopSale[t]} onChange={()=>setStopSale(p=>({...p,[t]:!p[t]}))} />
                       <label htmlFor={`stop-${t}`}></label>
                     </div>
                   </div>
@@ -121,7 +135,9 @@ const ChannelManager = () => {
             </div>
 
             <div className="rc-foot">
-              <button className="btn-save"><Save size={15}/> Değişiklikleri Kanallara Gönder</button>
+              <button className={`btn-save ${saved?'saved':''}`} onClick={()=>{setSaved(true);addNotification({type:'success',msg:'Fiyatlar ve stop-sale durumu tüm kanallara gönderildi!'});setTimeout(()=>setSaved(false),2000);}}>
+                <Save size={15}/> {saved?'✓ Gönderildi!':'Değişiklikleri Kanallara Gönder'}
+              </button>
             </div>
           </div>
         </div>

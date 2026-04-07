@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { motion } from 'framer-motion';
 import {
   Receipt, Plus, Search, Download, Filter,
   CheckCircle, Clock, AlertCircle, Building, X
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const INVOICE_TYPES = ['Satış','Gider','İade'];
 const CATS = ['Konaklama','Restoran','SPA','Teknik','Tedarikçi','Diğer'];
@@ -66,6 +67,23 @@ const Finance = () => {
           <div key={i} className="fk"><strong style={{color:k.color}}>{k.val}</strong><span>{k.label}</span></div>
         ))}
       </div>
+
+      {/* Gelir/Gider Grafiği */}
+      {cashTransactions.length > 0 && (
+        <div className="fin-chart">
+          <h4>Kasa Hareketleri (Son \u0130\u015flemler)</h4>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={cashTransactions.slice(-10).map(t => ({name:t.date?.slice(5)||'',gelir:t.type==='gelir'?t.amount:0,gider:t.type==='gider'?t.amount:0}))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill:'#94a3b8',fontSize:10}}/>
+              <YAxis hide/>
+              <Tooltip formatter={(v,n) => [`\u20ba${v.toLocaleString()}`, n==='gelir'?'Gelir':'Gider']}/>
+              <Bar dataKey="gelir" fill="#10b981" radius={[4,4,0,0]} stackId="a"/>
+              <Bar dataKey="gider" fill="#ef4444" radius={[4,4,0,0]} stackId="b"/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {showForm && (
         <motion.form className="form-card" onSubmit={submit} initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}>

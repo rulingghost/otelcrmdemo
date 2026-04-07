@@ -24,8 +24,8 @@ const INITIAL_STOCK = [
 ];
 
 const Inventory = () => {
-  const { addNotification } = useHotel();
-  const [items, setItems]       = useState(INITIAL_STOCK);
+  const { addNotification, inventory } = useHotel();
+  const [items, setItems]       = useState(inventory && inventory.length > 0 ? inventory : INITIAL_STOCK);
   const [search, setSearch]     = useState('');
   const [catFilter, setCat]     = useState('Tümü');
   const [adjustModal, setAdjustModal] = useState(null);
