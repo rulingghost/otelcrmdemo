@@ -37,8 +37,8 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
   const [search, setSearch] = useState('');
   // All groups default to OPEN (false = not collapsed)
   const [collapsedGroups, setCollapsedGroups] = useState({
-    front: false, revenue: false, fb: false, guest: false,
-    operations: false, analytics: false, system: false,
+    front: true, revenue: true, fb: true, guest: true,
+    operations: true, analytics: true, system: true,
   });
 
   const toggleGroup = (key) => {
