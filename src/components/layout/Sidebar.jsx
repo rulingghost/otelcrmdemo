@@ -1,18 +1,43 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import {
-  Home, LayoutGrid, Settings, HelpCircle, ChevronRight,
+  Home, LayoutGrid, Settings, HelpCircle, ChevronRight, ChevronDown,
   Calendar, CreditCard, Users, LogIn, LogOut, FileText,
   ShoppingCart, Wrench, Bed, Search, X, Star
 } from 'lucide-react';
 import Fuse from 'fuse.js';
 
+const GROUP_ORDER = [
+  { key: 'front', label: '🏨 Ön Büro & Oper.', color:'#3b82f6' },
+  { key: 'revenue', label: '💰 Gelir & Finans', color:'#10b981' },
+  { key: 'fb', label: '🍽️ Yiyecek & İçecek', color:'#f59e0b' },
+  { key: 'guest', label: '👥 Misafir İlişk.', color:'#8b5cf6' },
+  { key: 'operations', label: '⚙️ Operasyon', color:'#ef4444' },
+  { key: 'analytics', label: '📊 Analiz & Rap.', color:'#64748b' },
+  { key: 'system', label: '🔧 Sistem (IT)', color:'#475569' },
+];
 
+const MODULE_GROUPS = {
+  front:      ['dashboard','front-office','new-reservation','res-list','res-card','reservations-tape','checkout','room-rack','tape-chart','kbs','night-audit','housekeeping'],
+  revenue:    ['revenue','cash-desk','folio','finance','accounting','budget','cost-control','forecast'],
+  fb:         ['pos','minibar','spa','entertainment','laundry','banquet'],
+  guest:      ['crm','loyalty','surveys','group-res','lost-found'],
+  operations: ['tech-service','stock','purchasing','hr','smart-room','contracts','tours'],
+  analytics:  ['global-vision','ai-strategy','sales-marketing','kvkk'],
+  system:     ['channel','crs','it-infra','integrations','system-admin'],
+};
+
+const PINNED = ['dashboard','front-office','new-reservation','folio','cash-desk','room-rack','housekeeping','checkout'];
 
 const Sidebar = ({ activeModule, onSelectModule, modules }) => {
   const { stats, reservations, tasks } = useHotel();
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  const toggleGroup = (key) => {
+    setCollapsedGroups(prev => ({...prev, [key]: !prev[key]}));
+  };
 
   const pendingCI = reservations.filter(r=>r.status==='gelecek').length;
   const pendingCO = reservations.filter(r=>r.status==='check-in').length;
@@ -83,21 +108,99 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
             />
           )}
           <div className="scroll-area">
-            {filteredModules.map(module => (
-              <button
-                key={module.id}
-                className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
-                onClick={() => onSelectModule(module.id)}
-              >
-                <div className="ni-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
-                  {React.cloneElement(module.icon, { size: 18 })}
-                </div>
-                <span>{module.name}</span>
-                {BADGES[module.id] && (
-                  <span className={`nav-badge ${BADGES[module.id] > 0 ? 'red' : ''}`}>{BADGES[module.id]}</span>
-                )}
-              </button>
-            ))}
+            {search ? (
+              filteredModules.map(module => (
+                <button
+                  key={module.id}
+                  className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
+                  onClick={() => onSelectModule(module.id)}
+                >
+                  <div className="ni-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
+                    {React.cloneElement(module.icon, { size: 18 })}
+                  </div>
+                  <span>{module.name}</span>
+                  {BADGES[module.id] && (
+                    <span className={`nav-badge ${BADGES[module.id] > 0 ? 'red' : ''}`}>{BADGES[module.id]}</span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <>
+                {(() => {
+                  const pinnedMods = PINNED.map(id => filteredModules.find(m => m.id === id)).filter(Boolean);
+                  if (pinnedMods.length === 0) return null;
+                  return (
+                    <div className="sidebar-group">
+                      <div 
+                        className="sg-title interactive" 
+                        onClick={() => toggleGroup('pinned')}
+                        style={{color: '#f59e0b'}}
+                      >
+                        <div className="sg-t-left"><Star size={12} fill="currentColor" /> Sabitlenmiş Modüller</div>
+                        {collapsedGroups['pinned'] ? <ChevronRight size={13}/> : <ChevronDown size={13}/>}
+                      </div>
+                      {!collapsedGroups['pinned'] && (
+                        <div className="sg-content">
+                          {pinnedMods.map(module => (
+                            <button
+                              key={module.id}
+                              className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
+                              onClick={() => onSelectModule(module.id)}
+                            >
+                              <div className="ni-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
+                                {React.cloneElement(module.icon, { size: 18 })}
+                              </div>
+                              <span>{module.name}</span>
+                              {BADGES[module.id] && (
+                                <span className={`nav-badge ${BADGES[module.id] > 0 ? 'red' : ''}`}>{BADGES[module.id]}</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {GROUP_ORDER.map(grp => {
+                  const ids = MODULE_GROUPS[grp.key] || [];
+                  const grpMods = ids.map(id => filteredModules.find(m => m.id === id)).filter(Boolean);
+                  if (grpMods.length === 0) return null;
+                  
+                  return (
+                    <div key={grp.key} className="sidebar-group">
+                      <div 
+                        className="sg-title interactive" 
+                        onClick={() => toggleGroup(grp.key)}
+                        style={{color: grp.color}}
+                      >
+                        <div className="sg-t-left">{grp.label}</div>
+                        {collapsedGroups[grp.key] ? <ChevronRight size={13}/> : <ChevronDown size={13}/>}
+                      </div>
+                      {!collapsedGroups[grp.key] && (
+                        <div className="sg-content">
+                          {grpMods.map(module => (
+                            <button
+                              key={module.id}
+                              className={`nav-item ${activeModule === module.id ? 'active' : ''}`}
+                              onClick={() => onSelectModule(module.id)}
+                            >
+                              <div className="ni-icon" style={{ color: activeModule === module.id ? 'white' : module.color }}>
+                                {React.cloneElement(module.icon, { size: 18 })}
+                              </div>
+                              <span>{module.name}</span>
+                              {BADGES[module.id] && (
+                                <span className={`nav-badge ${BADGES[module.id] > 0 ? 'red' : ''}`}>{BADGES[module.id]}</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            )}
             {filteredModules.length === 0 && (
               <div className="no-mod">Modül bulunamadı.</div>
             )}
@@ -164,6 +267,13 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
         .scroll-area { flex: 1; overflow-y: auto; padding-right: 2px; }
         .scroll-area::-webkit-scrollbar { width: 3px; }
         .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+
+        .sidebar-group { margin-bottom: 12px; }
+        .sg-title { font-size: 10px; font-weight: 800; color: #64748b; padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 2px; }
+        .sg-title.interactive { display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .sg-title.interactive:hover { background: rgba(255,255,255,0.06); color: white !important; }
+        .sg-t-left { display: flex; align-items: center; gap: 6px; }
+        .sg-content { display: flex; flex-direction: column; gap: 2px; }
 
         .no-mod { text-align: center; padding: 20px 0; color: #475569; font-size: 12px; }
 
