@@ -8,13 +8,13 @@ import {
 import Fuse from 'fuse.js';
 
 const GROUP_ORDER = [
-  { key: 'front', label: '🏨 Ön Büro & Oper.', color:'#3b82f6' },
-  { key: 'revenue', label: '💰 Gelir & Finans', color:'#10b981' },
-  { key: 'fb', label: '🍽️ Yiyecek & İçecek', color:'#f59e0b' },
-  { key: 'guest', label: '👥 Misafir İlişk.', color:'#8b5cf6' },
-  { key: 'operations', label: '⚙️ Operasyon', color:'#ef4444' },
-  { key: 'analytics', label: '📊 Analiz & Rap.', color:'#64748b' },
-  { key: 'system', label: '🔧 Sistem (IT)', color:'#475569' },
+  { key: 'front', label: 'ÖN BÜRO & OPER.', icon: '🏨', color:'#3b82f6' },
+  { key: 'revenue', label: 'GELİR & FİNANS', icon: '💰', color:'#10b981' },
+  { key: 'fb', label: 'YİYECEK & İÇECEK', icon: '🍽️', color:'#f59e0b' },
+  { key: 'guest', label: 'MİSAFİR İLİŞK.', icon: '👥', color:'#8b5cf6' },
+  { key: 'operations', label: 'OPERASYON', icon: '⚙️', color:'#ef4444' },
+  { key: 'analytics', label: 'ANALİZ & RAP.', icon: '📊', color:'#64748b' },
+  { key: 'system', label: 'SİSTEM (IT)', icon: '🔧', color:'#475569' },
 ];
 
 const MODULE_GROUPS = {
@@ -33,7 +33,10 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
   const { stats, reservations, tasks } = useHotel();
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState({});
+  // Default all groups to collapsed as per image
+  const [collapsedGroups, setCollapsedGroups] = useState({
+    pinned: true, front: true, revenue: true, fb: true, guest: true, operations: true, analytics: true, system: true
+  });
 
   const toggleGroup = (key) => {
     setCollapsedGroups(prev => ({...prev, [key]: !prev[key]}));
@@ -136,8 +139,11 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
                         onClick={() => toggleGroup('pinned')}
                         style={{color: '#f59e0b'}}
                       >
-                        <div className="sg-t-left"><Star size={12} fill="currentColor" /> Sabitlenmiş Modüller</div>
-                        {collapsedGroups['pinned'] ? <ChevronRight size={13}/> : <ChevronDown size={13}/>}
+                        <div className="sg-t-left">
+                          <span className="sg-icon">⭐</span>
+                          <span className="sg-label">SABİTLENMİŞ MODÜLLER</span>
+                        </div>
+                        <ChevronRight size={14} className={`sg-chevron ${collapsedGroups['pinned'] ? '' : 'open'}`}/>
                       </div>
                       {!collapsedGroups['pinned'] && (
                         <div className="sg-content">
@@ -174,8 +180,11 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
                         onClick={() => toggleGroup(grp.key)}
                         style={{color: grp.color}}
                       >
-                        <div className="sg-t-left">{grp.label}</div>
-                        {collapsedGroups[grp.key] ? <ChevronRight size={13}/> : <ChevronDown size={13}/>}
+                        <div className="sg-t-left">
+                          <span className="sg-icon">{grp.icon}</span>
+                          <span className="sg-label">{grp.label}</span>
+                        </div>
+                        <ChevronRight size={14} className={`sg-chevron ${collapsedGroups[grp.key] ? '' : 'open'}`}/>
                       </div>
                       {!collapsedGroups[grp.key] && (
                         <div className="sg-content">
@@ -268,12 +277,16 @@ const Sidebar = ({ activeModule, onSelectModule, modules }) => {
         .scroll-area::-webkit-scrollbar { width: 3px; }
         .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
 
-        .sidebar-group { margin-bottom: 12px; }
-        .sg-title { font-size: 10px; font-weight: 800; color: #64748b; padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 2px; }
-        .sg-title.interactive { display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .sidebar-group { margin-bottom: 8px; }
+        .sg-title { font-size: 11px; font-weight: 800; color: #64748b; padding: 12px 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.9; margin-bottom: 2px; }
+        .sg-title.interactive { display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 10px; transition: 0.2s; }
         .sg-title.interactive:hover { background: rgba(255,255,255,0.06); color: white !important; }
-        .sg-t-left { display: flex; align-items: center; gap: 6px; }
-        .sg-content { display: flex; flex-direction: column; gap: 2px; }
+        .sg-t-left { display: flex; align-items: center; gap: 12px; }
+        .sg-icon { font-size: 14px; width: 20px; display: flex; justify-content: center; }
+        .sg-label { margin-top: 1px; }
+        .sg-chevron { transition: transform 0.3s; color: #475569; }
+        .sg-chevron.open { transform: rotate(90deg); color: white; }
+        .sg-content { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
 
         .no-mod { text-align: center; padding: 20px 0; color: #475569; font-size: 12px; }
 
